@@ -1,10 +1,10 @@
 # Optional two-way sync
 
-Two-way recipe and meal-plan sync looks technically feasible through Recipe
-Keeper's existing cloud endpoint. The installed app contains an upload path
-using the same `/api/sync` endpoint that we already use for downloads. Uploads
-have not been tested against this account. The current bridge remains read-only;
-the option described here is a proposed interface, not an implemented setting.
+Two-way recipe and meal-plan sync is implemented in the standalone cloud API,
+with editing off by default. See [cloud editing](cloud-editing.md) for the
+setting, endpoints, recovery behavior, and limitations. Create, update, and
+delete have been verified using disposable records only. The original design
+and binary findings follow; the proposed HA options UI is not built yet.
 
 This can fit the [native Home Assistant architecture](hacs-feasibility.md) and
 run inside the HA VM. It does not introduce a requirement for a Docker/API
@@ -29,9 +29,10 @@ documented public API or a successful write experiment.
 The local `VersionNo` check prevents an acknowledgement for an older edit from
 clearing a newer local edit. It does **not** establish server-side conditional
 updates or conflict rejection. The inspected base wire record does not include
-`VersionNo`; the role of `LastModified` in server conflict handling still needs
-an experiment. Upload permissions, create defaults, ID format, duplicate retry
-behavior, deletion behavior, and concurrent edits remain unverified live.
+`VersionNo`. Live tests on disposable recipes and meals found the server accepts
+stale `LastModified` values. Preflight checks cannot eliminate concurrent-write
+races. Create defaults, generated UUIDs, uploads, and tombstone deletion work in
+the tested account. Automatic replay of writes remains unsupported.
 
 ## Proposed editing flag
 
@@ -63,7 +64,9 @@ in diagnostics.
 This is a client-enforced policy. Our existing bearer token has no established
 read-only scope, so the flag is not a separate server permission.
 
-## Required sync changes
+## Implementation requirements
+
+The standalone API implements the following requirements. HA adapters remain future work.
 
 1. **Preserve complete source records.** The current probe discards photos and
    the cache stores only selected recipe/meal fields. It also drops per-record
@@ -148,6 +151,7 @@ testing. Keep ordinary recipes and meal entries outside the experiment.
 5. Prove that default/off mode sends no uploads, including after restart,
    reauthentication, stale action calls, pending work, and disable/re-enable.
 
-The next implementation step can build the complete-record store and a dry-run
-upload builder with synthetic tests. Successful disposable-record write tests
-are the gate before exposing editing in the integration.
+The complete-record store, guarded upload path, durable operation journal,
+independent verification, API actions, and synthetic tests are implemented.
+Disposable-record write tests passed; see the validation record. HA integration
+adapters and installation remain the next stage.

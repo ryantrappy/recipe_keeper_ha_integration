@@ -121,3 +121,35 @@ def test_cli_refuses_foreign_cache_without_modifying_it(
     with pytest.raises(SystemExit):
         cli.main()
     assert path.read_bytes() == original
+
+
+@pytest.mark.parametrize("value", ["1", "yes", "truthy", ""])
+def test_editing_setting_requires_explicit_boolean(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("RECIPE_ASSISTANT_ALLOW_EDITS", value)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["recipe-assistant", "inspect", "--env-file", str(tmp_path / "missing.env")],
+    )
+    with pytest.raises(SystemExit):
+        cli.main()
+
+
+def test_database_backend_cannot_enable_editing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RECIPE_ASSISTANT_ALLOW_EDITS", "true")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "recipe-assistant",
+            "inspect",
+            "--backend",
+            "database",
+            "--env-file",
+            str(tmp_path / "missing.env"),
+        ],
+    )
+    with pytest.raises(SystemExit):
+        cli.main()

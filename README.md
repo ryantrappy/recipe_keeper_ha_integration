@@ -1,10 +1,12 @@
 # Recipe Assistant API
 
-A read-only Recipe Keeper API for Home Assistant or other local clients. Choose
+A Recipe Keeper API for Home Assistant or other local clients. Choose
 the Mac's local database or a persistent cloud cache that can run independently
 on trappserv.er. Both backends expose the same recipe, meal-plan, and ingredient
 preview endpoints. Cloud mode signs in automatically, polls incrementally, and
 keeps serving its last complete snapshot during outages.
+Both backends default to read-only access. Cloud mode also supports explicitly
+enabled recipe and meal editing; see [cloud editing](docs/cloud-editing.md).
 
 See [cloud deployment](docs/cloud-deployment.md) for the recommended cloud setup
 and [the investigation](docs/cloud-investigation.md) for protocol findings.
@@ -15,9 +17,9 @@ custom integration can connect directly from Home Assistant in the VM, using
 HA networking and storage. It does not require a separate API container. The
 current API remains useful independently; the HACS component is not built yet.
 
-[Optional two-way sync](docs/two-way-sync.md) describes the app's upload path,
-the proposed `allow_edits` flag, and the validation needed before enabling
-editing. Writes are not implemented in the current service.
+[Optional two-way sync](docs/two-way-sync.md) records the protocol investigation.
+The API now implements guarded editing; HACS packaging and its options UI remain
+to build. Editing stays off unless `RECIPE_ASSISTANT_ALLOW_EDITS=true` is set.
 
 ## Cloud quick start
 

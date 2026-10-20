@@ -1,4 +1,4 @@
-"""Authenticated HTTP interface to the local database."""
+"""Authenticated recipe reads and explicitly enabled cloud edits."""
 
 import asyncio
 import logging
@@ -12,12 +12,24 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from .cloud_backend import CacheUnavailable, CloudDatabase, SyncWorker
+from .cloud_backend import CacheUnavailable, CloudDatabase, SyncBusy, SyncWorker
+from .cloud_edits import (
+    CloudEditor,
+    EditConflict,
+    EditingDisabled,
+    EntityNotFound,
+)
+from .cloud_probe import ProbeError
 from .database import Database, SchemaError
 from .models import (
+    DeleteRequest,
+    MealCreateRequest,
     MealPlan,
+    MealUpdateRequest,
     Recipe,
+    RecipeCreateRequest,
     RecipePage,
+    RecipeUpdateRequest,
     ShoppingPreview,
     ShoppingSelectionRequest,
     Status,
@@ -32,6 +44,7 @@ def create_app(
     token: str,
     worker: SyncWorker | None = None,
     pantry_staples: tuple[str, ...] = (),
+    editor: CloudEditor | None = None,
 ) -> FastAPI:
     if len(token) < 32 or token == "replace-with-a-long-random-token":
         raise ValueError("Set RECIPE_ASSISTANT_TOKEN to at least 32 random characters")
@@ -62,7 +75,7 @@ def create_app(
     app = FastAPI(
         title="Recipe Assistant API",
         version="0.1.0",
-        description="Read-only access to local or cloud-cached Recipe Keeper data.",
+        description="Recipe Keeper access with optional cloud editing.",
         dependencies=[Depends(authenticate)],
         lifespan=lifespan,
     )
@@ -96,6 +109,40 @@ def create_app(
     for error in (sqlite3.Error, OSError, SchemaError, CacheUnavailable):
         app.add_exception_handler(error, unavailable)
 
+    async def edit_error(request: Request, exc: Exception) -> JSONResponse:
+        code, message = {
+            EditingDisabled: (403, "Recipe Keeper editing is disabled"),
+            EditConflict: (409, str(exc)),
+            EntityNotFound: (404, str(exc)),
+            ProbeError: (503, "Cloud refresh failed; cached data was preserved"),
+            SyncBusy: (409, "Cloud sync is busy; retry later"),
+        }.get(type(exc), (503, "Cloud operation unavailable"))
+        return JSONResponse(status_code=code, content={"detail": message})
+
+    for error in (EditingDisabled, EditConflict, EntityNotFound, ProbeError, SyncBusy):
+        app.add_exception_handler(error, edit_error)
+
+    def cloud_editor() -> CloudEditor:
+        if editor is None or not isinstance(database, CloudDatabase):
+            raise EditingDisabled("Recipe Keeper editing is disabled")
+        return editor
+
+    def require_edits() -> None:
+        if not cloud_editor().enabled:
+            raise EditingDisabled("Recipe Keeper editing is disabled")
+
+    write_guard = [Depends(require_edits)]
+
+    def edit_result(result: dict) -> JSONResponse:
+        code = (
+            200
+            if result["state"] == "confirmed"
+            else 409
+            if result["state"] == "conflict"
+            else 202
+        )
+        return JSONResponse(status_code=code, content=result)
+
     def date_range(start: date, end: date) -> tuple[date, date]:
         if end < start or (end - start).days > 365 or end == date.max:
             raise HTTPException(422, "Use an ordered date range of at most 366 days")
@@ -105,7 +152,11 @@ def create_app(
 
     @app.get("/v1/status", response_model=Status)
     def status() -> Status:
-        return database.status()
+        result = database.status()
+        if editor is not None and isinstance(database, CloudDatabase):
+            result.allow_edits = editor.enabled
+            result.edit_operations = editor.counts()
+        return result
 
     @app.get("/v1/recipes", response_model=RecipePage)
     def recipes(
@@ -141,5 +192,98 @@ def create_app(
             )
         except SelectionChangedError as exc:
             raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/v1/recipes/{recipe_id}/editing")
+    def recipe_editing(recipe_id: str) -> dict:
+        return cloud_editor().view("Recipe", recipe_id)
+
+    @app.get("/v1/meals/{meal_id}/editing")
+    def meal_editing(meal_id: str) -> dict:
+        return cloud_editor().view("Meal", meal_id)
+
+    @app.post("/v1/recipes", dependencies=write_guard)
+    def create_recipe(body: RecipeCreateRequest) -> JSONResponse:
+        return edit_result(
+            cloud_editor().edit(
+                "Recipe",
+                "create",
+                str(body.operation_id),
+                body.changes.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    @app.patch("/v1/recipes/{recipe_id}", dependencies=write_guard)
+    def update_recipe(recipe_id: str, body: RecipeUpdateRequest) -> JSONResponse:
+        return edit_result(
+            cloud_editor().edit(
+                "Recipe",
+                "update",
+                str(body.operation_id),
+                body.changes.model_dump(mode="json", exclude_unset=True),
+                entity_id=recipe_id,
+                expected_revision=body.revision,
+            )
+        )
+
+    @app.delete("/v1/recipes/{recipe_id}", dependencies=write_guard)
+    def delete_recipe(recipe_id: str, body: DeleteRequest) -> JSONResponse:
+        return edit_result(
+            cloud_editor().edit(
+                "Recipe",
+                "delete",
+                str(body.operation_id),
+                {},
+                entity_id=recipe_id,
+                expected_revision=body.revision,
+            )
+        )
+
+    @app.post("/v1/meals", dependencies=write_guard)
+    def create_meal(body: MealCreateRequest) -> JSONResponse:
+        return edit_result(
+            cloud_editor().edit(
+                "Meal",
+                "create",
+                str(body.operation_id),
+                body.changes.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    @app.patch("/v1/meals/{meal_id}", dependencies=write_guard)
+    def update_meal(meal_id: str, body: MealUpdateRequest) -> JSONResponse:
+        return edit_result(
+            cloud_editor().edit(
+                "Meal",
+                "update",
+                str(body.operation_id),
+                body.changes.model_dump(mode="json", exclude_unset=True),
+                entity_id=meal_id,
+                expected_revision=body.revision,
+            )
+        )
+
+    @app.delete("/v1/meals/{meal_id}", dependencies=write_guard)
+    def delete_meal(meal_id: str, body: DeleteRequest) -> JSONResponse:
+        return edit_result(
+            cloud_editor().edit(
+                "Meal",
+                "delete",
+                str(body.operation_id),
+                {},
+                entity_id=meal_id,
+                expected_revision=body.revision,
+            )
+        )
+
+    @app.get("/v1/edit-operations/{operation_id}")
+    def operation(operation_id: str) -> dict:
+        result = cloud_editor().operation(operation_id)
+        if result is None:
+            raise EntityNotFound("Operation not found")
+        return result
+
+    @app.post("/v1/edit-operations/{operation_id}/reconcile")
+    def reconcile(operation_id: str) -> JSONResponse:
+        return edit_result(cloud_editor().reconcile(operation_id))
 
     return app

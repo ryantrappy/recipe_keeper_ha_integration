@@ -1,4 +1,4 @@
-"""Persist download-only cloud syncs and serve them through the existing reader."""
+"""Persist complete cloud snapshots and serve them through the existing reader."""
 
 import fcntl
 import hashlib
@@ -28,7 +28,7 @@ from .models import Status
 
 LOGGER = logging.getLogger(__name__)
 APPLICATION_ID = 0x524B4841
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 class CacheUnavailable(Exception):
@@ -71,17 +71,25 @@ def load_credentials(path: Path) -> Credentials:
 
 
 class CloudSession(CloudProbe):
-    def __init__(self, credentials: Credentials) -> None:
+    def __init__(self, credentials: Credentials, *, allow_edits: bool = False) -> None:
         super().__init__("")
         self.credentials = credentials
+        self.preserve_photos = True
+        self.user_agent = "recipe-assistant-api/0.1"
+        if type(allow_edits) is not bool:
+            raise ValueError("allow_edits must be a boolean")
+        self.allow_edits = allow_edits
 
     def page(self, cursors: dict[str, str]) -> dict[str, Page]:
+        return self._authenticated(lambda: super(CloudSession, self).page(cursors))
+
+    def _authenticated(self, operation):
         if not self._token:
             self._token = fresh_login(
                 self.credentials.email, self.credentials.password
             ).token
         try:
-            return super().page(cursors)
+            return operation()
         except CloudHTTPError as exc:
             if exc.status_code != 401:
                 raise
@@ -89,12 +97,30 @@ class CloudSession(CloudProbe):
             self.credentials.email, self.credentials.password
         ).token
         try:
-            return super().page(cursors)
+            return operation()
         except CloudHTTPError as exc:
             if exc.status_code == 401:
                 self._token = ""
                 raise AuthenticationError("Renewed session rejected") from None
             raise
+
+    def upload(self, cursors: dict[str, str], section: str, record: dict) -> dict:
+        from .cloud_edits import EditingDisabled
+        from .cloud_probe import request_body
+
+        def send() -> dict:
+            if self.allow_edits is not True:
+                raise EditingDisabled("Recipe Keeper editing is disabled")
+            if section not in SECTIONS:
+                raise ValueError("Unsupported entity type")
+            body = request_body(cursors)
+            body[section + "SyncEntityRequest"]["SyncEntities"] = [record]
+            body[section + "SyncEntityRequest"]["LocalChangesIds"] = [record["Id"]]
+            return self._send(body)
+
+        if self.allow_edits is not True:
+            raise EditingDisabled("Recipe Keeper editing is disabled")
+        return self._authenticated(send)
 
 
 class CloudCache:
@@ -115,7 +141,8 @@ class CloudCache:
                     raise SchemaError(
                         "Cache file is not owned by Recipe Assistant"
                     ) from None
-                if conn.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
+                version = conn.execute("PRAGMA user_version").fetchone()[0]
+                if version not in (1, SCHEMA_VERSION):
                     raise SchemaError("Unsupported cloud cache version") from None
                 stored = conn.execute(
                     "SELECT value FROM Metadata WHERE key='account_id'"
@@ -127,6 +154,8 @@ class CloudCache:
                     ) from None
             if self.path.stat().st_mode & 0o077:
                 raise ValueError("Cloud cache must have mode 0600") from None
+            if version == 1:
+                self._create_edit_tables()
         else:
             os.close(fd)
             with self.connect() as conn:
@@ -151,8 +180,25 @@ class CloudCache:
                     );
                 """)
                 self._metadata(conn, {"account_id": account_id})
+        self._create_edit_tables()
         with self.connect() as conn:
             conn.execute("PRAGMA journal_mode=WAL")
+
+    def _create_edit_tables(self) -> None:
+        with self.connect() as conn:
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS RawRecords ("
+                "Section TEXT, Id TEXT, Record TEXT NOT NULL, "
+                "PRIMARY KEY (Section, Id))"
+            )
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS EditOperations ("
+                "Id TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, "
+                "Section TEXT NOT NULL, EntityId TEXT NOT NULL, "
+                "Action TEXT NOT NULL, Baseline TEXT, Payload TEXT NOT NULL, "
+                "State TEXT NOT NULL, Error TEXT, CreatedAt TEXT NOT NULL)"
+            )
+            conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
@@ -192,8 +238,32 @@ class CloudCache:
         with self.connect() as conn:
             self._metadata(conn, values)
 
-    def apply(self, entities: dict, cursors: dict[str, str], now: datetime) -> None:
+    def apply(
+        self,
+        entities: dict,
+        cursors: dict[str, str],
+        now: datetime,
+        *,
+        replace: bool = False,
+    ) -> None:
         with self.connect() as conn:
+            if replace:
+                for table in (
+                    "Recipes",
+                    "Meals",
+                    "RecipeCategories",
+                    "LinkedRecipes",
+                    "RawRecords",
+                ):
+                    conn.execute(f"DELETE FROM {table}")
+            for section in SECTIONS:
+                conn.executemany(
+                    "INSERT OR REPLACE INTO RawRecords VALUES (?, ?, ?)",
+                    [
+                        (section, row["Id"], json.dumps(row))
+                        for row in entities[section].values()
+                    ],
+                )
             for row in entities["Recipe"].values():
                 recipe_id = row["Id"]
                 conn.execute(
@@ -263,6 +333,7 @@ class CloudCache:
                     "cursors": cursors,
                     "last_successful_sync_at": now.isoformat(),
                     "last_sync_error": None,
+                    "raw_snapshot_ready": True,
                 },
             )
 
@@ -324,27 +395,32 @@ class SyncWorker:
 
     def sync(self) -> None:
         with self.cache.sync_lock():
-            now = datetime.now(UTC)
-            self.cache.update_metadata({"last_sync_attempt_at": now.isoformat()})
-            previous = self.cache.metadata().get("cursors", {})
-            pending = {name: previous.get(name, INITIAL_CURSOR) for name in SECTIONS}
-            cursors = dict(previous)
-            entities = {name: {} for name in SECTIONS}
-            for _ in range(100):
-                pages = self.session.page(dict(pending))
-                if self.stop_event.is_set():
-                    return
-                for name, page in pages.items():
-                    entities[name].update((row["Id"], row) for row in page.entities)
-                    cursors[name] = page.cursor
-                    if page.has_more:
-                        pending[name] = page.cursor
-                    else:
-                        del pending[name]
-                if not pending:
-                    self.cache.apply(entities, cursors, datetime.now(UTC))
-                    return
-            raise ProbeError("Cloud pagination limit reached")
+            self.sync_locked()
+
+    def sync_locked(self, *, full: bool = False) -> None:
+        now = datetime.now(UTC)
+        self.cache.update_metadata({"last_sync_attempt_at": now.isoformat()})
+        metadata = self.cache.metadata()
+        full = full or not metadata.get("raw_snapshot_ready", False)
+        previous = {} if full else metadata.get("cursors", {})
+        pending = {name: previous.get(name, INITIAL_CURSOR) for name in SECTIONS}
+        cursors = dict(previous)
+        entities = {name: {} for name in SECTIONS}
+        for _ in range(100):
+            pages = self.session.page(dict(pending))
+            if self.stop_event.is_set():
+                raise ProbeError("Sync stopped before completion")
+            for name, page in pages.items():
+                entities[name].update((row["Id"], row) for row in page.entities)
+                cursors[name] = page.cursor
+                if page.has_more:
+                    pending[name] = page.cursor
+                else:
+                    del pending[name]
+            if not pending:
+                self.cache.apply(entities, cursors, datetime.now(UTC), replace=full)
+                return
+        raise ProbeError("Cloud pagination limit reached")
 
     def run_once(self) -> int:
         try:

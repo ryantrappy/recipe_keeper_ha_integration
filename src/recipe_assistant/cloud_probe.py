@@ -12,6 +12,7 @@ import warnings
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
+from http.client import HTTPException
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -127,8 +128,8 @@ def fresh_login(email: str, password: str) -> Authentication:
         raise ProbeError(
             f"Login failed (HTTP {exc.code}); response body omitted; no retry attempted"
         ) from None
-    except (URLError, TimeoutError) as exc:
-        raise ProbeError("Login network or TLS connection failed") from exc
+    except (URLError, TimeoutError, HTTPException):
+        raise ProbeError("Login network, TLS or HTTP connection failed") from None
     if len(raw) > 1_000_000:
         raise ProbeError("Login response exceeds 1 MB; stopping")
     try:
@@ -183,6 +184,8 @@ def read_mac_session(path: Path = MAC_PREFERENCES) -> str:
 class CloudProbe:
     def __init__(self, token: str) -> None:
         self._token = token
+        self.preserve_photos = False
+        self.user_agent = "recipe-assistant-api/0.1 read-only feasibility probe"
         self.calls = 0
         self.response_bytes = 0
 
@@ -195,7 +198,7 @@ class CloudProbe:
                 "Authorization": "Bearer " + self._token,
                 "Content-Type": "application/json; charset=utf-8",
                 "X-RK-APIVersion": "10",
-                "User-Agent": "recipe-assistant-api/0.1 read-only feasibility probe",
+                "User-Agent": self.user_agent,
             },
         )
         opener = build_opener(
@@ -208,8 +211,8 @@ class CloudProbe:
             retry = exc.headers.get("Retry-After", "") if exc.headers else ""
             retry_after = int(retry) if retry.isascii() and retry.isdecimal() else 0
             raise CloudHTTPError(exc.code, retry_after) from None
-        except (URLError, TimeoutError) as exc:
-            raise ProbeError("Cloud network or TLS connection failed") from exc
+        except (URLError, TimeoutError, HTTPException):
+            raise ProbeError("Cloud network, TLS or HTTP connection failed") from None
         self.calls += 1
         self.response_bytes += len(raw)
         if len(raw) > 50_000_000:
@@ -250,14 +253,18 @@ class CloudProbe:
             if more and cursor == previous:
                 raise ProbeError("Pagination cursor did not advance")
             # Photo blobs are not needed for feasibility checks or ingredient lists.
-            stripped = [
-                {
-                    key: value
-                    for key, value in row.items()
-                    if not key.startswith("Photo")
-                }
-                for row in rows
-            ]
+            stripped = (
+                rows
+                if self.preserve_photos
+                else [
+                    {
+                        key: value
+                        for key, value in row.items()
+                        if not key.startswith("Photo")
+                    }
+                    for row in rows
+                ]
+            )
             result[name] = Page(stripped, cursor, more)
         return result
 

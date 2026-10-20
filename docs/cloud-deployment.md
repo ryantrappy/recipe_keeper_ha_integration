@@ -1,5 +1,9 @@
 # Run the cloud backend
 
+Sync defaults to downloads only. For optional recipe and meal editing, read
+[cloud editing](cloud-editing.md) before setting
+`RECIPE_ASSISTANT_ALLOW_EDITS=true`; the server accepts competing stale writes.
+
 Cloud mode runs on Linux or macOS and does not read the Recipe Keeper app's
 database, preferences, or Mac session. It signs in independently, downloads
 recipe/meal updates, and serves the existing API from its own persistent cache.
@@ -60,7 +64,8 @@ downloaded before acquiring a database write transaction. The entire set of
 updates, deletions, and cursors commits together. Failed or incomplete page
 downloads leave the last complete snapshot and cursors intact.
 
-No photo blobs are stored in this cache. The server can include photos in the
+The cache retains complete source records, including photo blobs, so optional
+edits can preserve fields outside the reader API. The server can include photos in the
 initial response, so it can still be large. Ingredients, directions, serving
 text, categories, linked recipe IDs, and meal fields used by the existing API
 are retained. Cloud planner dates keep their calendar date without a timezone

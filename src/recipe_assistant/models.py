@@ -1,8 +1,10 @@
 """Public bridge response models."""
 
+import datetime as dt
 from datetime import date, datetime
+from uuid import UUID
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
 
 class RecipeSummary(BaseModel):
@@ -97,3 +99,84 @@ class Status(BaseModel):
     last_successful_sync_at: datetime | None = None
     last_sync_error: str | None = None
     next_sync_at: datetime | None = None
+    allow_edits: bool = False
+    edit_operations: dict[str, int] = Field(default_factory=dict)
+
+
+class EditFields(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def nonempty_changes(self):
+        if not self.model_fields_set or any(
+            getattr(self, key) is None for key in self.model_fields_set
+        ):
+            raise ValueError("Specify at least one non-null edit field")
+        for key in ("title", "meal_type"):
+            if key in self.model_fields_set and not getattr(self, key).strip():
+                raise ValueError(f"{key} must contain text")
+        if "scale" in self.model_fields_set and float(self.scale) <= 0:
+            raise ValueError("Scale must be positive")
+        return self
+
+
+class RecipeChanges(EditFields):
+    title: str | None = Field(default=None, min_length=1, max_length=1000)
+    serving_size: str | None = Field(default=None, max_length=1000)
+    source: str | None = Field(default=None, max_length=10000)
+    ingredients: str | None = Field(default=None, max_length=100000)
+    directions: str | None = Field(default=None, max_length=100000)
+    notes: str | None = Field(default=None, max_length=100000)
+    favourite: bool | None = None
+    categories: list[str] | None = Field(default=None, max_length=500)
+    rating: int | None = Field(default=None, ge=0, le=5)
+    preparation_time_raw: int | None = Field(default=None, ge=0)
+    cooking_time_raw: int | None = Field(default=None, ge=0)
+
+
+class NewRecipe(RecipeChanges):
+    title: str = Field(min_length=1, max_length=1000)
+
+
+class MealChanges(EditFields):
+    title: str | None = Field(default=None, min_length=1, max_length=1000)
+    date: dt.date | None = None
+    meal_type: str | None = Field(default=None, min_length=1, max_length=100)
+    meal_type_code: int | None = Field(default=None, ge=0, le=10000)
+    scale: str | None = Field(
+        default=None, pattern=r"^\d{1,4}(?:\.\d{1,4})?$", max_length=9
+    )
+    notes: str | None = Field(default=None, max_length=100000)
+    position: int | None = Field(default=None, ge=0, le=100000)
+    meal_time_raw: int | None = Field(default=None, ge=0)
+    colour_raw: int | None = None
+
+
+class NewMeal(MealChanges):
+    title: str = Field(min_length=1, max_length=1000)
+    date: dt.date
+
+
+class EditRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    operation_id: UUID
+
+
+class RecipeCreateRequest(EditRequest):
+    changes: NewRecipe
+
+
+class MealCreateRequest(EditRequest):
+    changes: NewMeal
+
+
+class DeleteRequest(EditRequest):
+    revision: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class RecipeUpdateRequest(DeleteRequest):
+    changes: RecipeChanges
+
+
+class MealUpdateRequest(DeleteRequest):
+    changes: MealChanges

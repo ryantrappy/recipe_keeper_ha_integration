@@ -33,7 +33,7 @@ def test_read_only_and_no_mutation(database: Database, client: TestClient) -> No
     assert recipe["directions"] == "Simmer."
     assert recipe["categories"] == ["Dinner"]
     assert hashlib.sha256(database.path.read_bytes()).hexdigest() == before
-    assert client.post("/v1/recipes").status_code == 405
+    assert client.post("/v1/recipes").status_code == 403
 
 
 @pytest.mark.parametrize("query", ["CRÈME", "beans cup", "' OR 1=1 --", "%", "_"])

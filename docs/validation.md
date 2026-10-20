@@ -98,9 +98,53 @@ published requirements. See [the feasibility report](hacs-feasibility.md).
 
 ## Ingredient selection and pantry defaults
 
-The suite now passes 117 tests. Selection tests cover individual choices,
+At that stage, the suite passed 117 tests. Selection tests cover individual choices,
 pantry overrides, conservative olive-oil matching, an empty selection, changed
 keys, retained review issues, and read-only API operation. A cached live preview
 retained all 14 ingredient lines, selected 13 by default, and left its olive oil
 line unchecked. Explicitly selecting that pantry line succeeded. The user's
 private `.env` now includes olive oil as a staple; source recipes were unchanged.
+
+## Two-way cloud editing
+
+The feature branch implements default-off editing for the standalone cloud API.
+An independent reviewer checked the full implementation and approved after
+fixes for malformed upload responses, interrupted HTTP replies, and explicit
+proof that live preservation fields were seeded. The suite now passes 164
+tests; Ruff lint/format and documentation link checks also pass.
+
+Synthetic tests cover full raw record retention, photo/unknown-field preservation,
+schema 1 migration with forced full refresh, stale revisions and deleted records,
+durable baselines/intents, idempotent operation IDs, interrupted responses before
+and after commit, malformed acknowledgements, verification outages, restart,
+default/off gates, read-only reconciliation, authentication, API validation, and
+the live harness's refusal to edit original or unowned IDs.
+
+Live validation used only newly generated disposable IDs. Private full snapshots
+were saved before writes, and ownership registries were persisted before create
+uploads. The final harness run verified:
+
+| Check | Result |
+| --- | --- |
+| Meal create, edit, independent read-back, delete | Passed |
+| Recipe create, edit, independent read-back, delete | Passed |
+| Seeded photo, calories, protein, and category fields present before edit | Passed |
+| Untouched recipe fields preserved after a notes edit | Passed |
+| Upload with stale `LastModified`, on disposable records only | Accepted for recipes and meals |
+| Original 72 active recipes and 55 active meals | All unchanged |
+| Every original full record, including original tombstones and photos | Matched the initial pre-test snapshot |
+| Active disposable records remaining across all tracked test runs | 0 |
+
+Some live attempts encountered uncertain upload/verification outcomes. They
+were held without replaying uploads; independent reads and owned-record cleanup
+resolved the test records. The harness now permits up to two explicit read-only
+reconciliations before declaring a test incomplete. Its final run passed all
+checks, including the stronger seed assertions. No existing recipe or meal was
+edited, deleted, or restored by these tests. Real app UI rendering was not part
+of this validation.
+
+The server accepts stale writes, so the client can reject a stale preflight
+revision but cannot guarantee against another device changing the record
+between refresh and upload. This limitation is documented in
+[cloud editing](cloud-editing.md). HACS packaging, HA options/actions, and VM
+installation remain separate from this API branch.
