@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, computed_field
 
 
 class RecipeSummary(BaseModel):
@@ -56,6 +56,8 @@ class ShoppingLine(BaseModel):
     date: date
     recipe_title: str
     text: str
+    selected: bool = True
+    pantry_match: str | None = None
 
 
 class ShoppingIssue(BaseModel):
@@ -70,6 +72,17 @@ class ShoppingPreview(BaseModel):
     items: list[ShoppingLine]
     issues: list[ShoppingIssue]
 
+    @computed_field
+    @property
+    def selected_items(self) -> list[ShoppingLine]:
+        return [item for item in self.items if item.selected]
+
+
+class ShoppingSelectionRequest(BaseModel):
+    start: date
+    end: date
+    selected_keys: list[str] | None = Field(default=None, max_length=10000)
+
 
 class Status(BaseModel):
     status: str = "ok"
@@ -77,3 +90,10 @@ class Status(BaseModel):
     meals: int
     database_modified_at: datetime
     cloud_sync_verified: bool = False
+    backend: str = "database"
+    cache_ready: bool = True
+    stale: bool = False
+    last_sync_attempt_at: datetime | None = None
+    last_successful_sync_at: datetime | None = None
+    last_sync_error: str | None = None
+    next_sync_at: datetime | None = None

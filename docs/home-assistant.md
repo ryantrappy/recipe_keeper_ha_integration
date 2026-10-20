@@ -6,8 +6,9 @@ shopping list. These can now be built against a small local API.
 
 ## First connection
 
-1. Deploy the bridge to the MacBook and establish connectivity from the actual
-   Home Assistant runtime (see [deployment](deployment.md)).
+1. Deploy the [cloud backend](cloud-deployment.md) on trappserv.er or the
+   [database bridge](deployment.md) on the MacBook. Establish connectivity from
+   the actual Home Assistant runtime.
 2. Store the bridge token in Home Assistant's secrets or integration credentials.
    Send it in the `Authorization` header, never in a URL.
 3. Confirm `/v1/status`, search `/v1/recipes?q=...`, and retrieve a recipe by ID.
@@ -30,14 +31,26 @@ Start with an explicit "add this week's ingredients" action, then automate once
 that behavior is verified against the shopping list you use.
 
 Recipe Keeper ingredients are free text. Quantity conversion, scaling non-unit
-servings, pantry exclusion, section headings, and combining similar ingredients
+servings, section headings, and combining similar ingredients
 need additional rules. This API preserves text and reports known uncertainty;
 it does not silently reinterpret recipe quantities.
+
+[Ingredient selection](shopping-selection.md) now supplies pantry defaults and
+explicit selected subsets. Use `selected_items` for shopping-list imports. Olive
+oil can start unchecked and be selected for a one-off purchase. The HACS review
+interface and list writer are still future implementation work.
 
 ## Availability and freshness
 
 Treat 503, connection failure, or an asleep Mac as unavailable data. An empty
 successful meal plan is distinct from a failed read. Keep previous list entries
 when the bridge is unavailable. The bridge observes local sync results only;
-the status timestamp is a file modification time, not a cloud synchronization
-guarantee.
+the database-mode timestamp is a file modification time, not a cloud
+synchronization guarantee.
+
+In cloud mode, the API can serve cached data during an outage. Check
+`X-Recipe-Assistant-Stale` or `/v1/status.stale` before automatically adding meal
+ingredients. `last_successful_sync_at` identifies the last complete cloud
+download. A 200 response with stale data is distinct from a current successful
+sync. Keep existing list entries during outages. An account's first sync failure
+returns 503 from data endpoints until a complete snapshot is available.

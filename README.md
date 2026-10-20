@@ -1,10 +1,47 @@
 # Recipe Assistant API
 
-A read-only bridge from Recipe Keeper on macOS to Home Assistant or other local
-clients. Runs on the Mac where Recipe Keeper stores its synced database. It does
-not need your Recipe Keeper password or use its private cloud API.
+A read-only Recipe Keeper API for Home Assistant or other local clients. Choose
+the Mac's local database or a persistent cloud cache that can run independently
+on trappserv.er. Both backends expose the same recipe, meal-plan, and ingredient
+preview endpoints. Cloud mode signs in automatically, polls incrementally, and
+keeps serving its last complete snapshot during outages.
 
-## Quick start
+See [cloud deployment](docs/cloud-deployment.md) for the recommended cloud setup
+and [the investigation](docs/cloud-investigation.md) for protocol findings.
+The default remains local database mode; it does not need cloud credentials.
+
+[HACS feasibility and architecture](docs/hacs-feasibility.md) confirms a future
+custom integration can connect directly from Home Assistant in the VM, using
+HA networking and storage. It does not require a separate API container. The
+current API remains useful independently; the HACS component is not built yet.
+
+## Cloud quick start
+
+```sh
+cd /Users/ryantrapp/Code/recipe_assistant_api
+uv sync --locked
+uv run recipe-assistant configure-cloud
+uv run recipe-assistant sync --backend cloud
+uv run recipe-assistant serve --backend cloud
+```
+
+Run `uv run recipe-assistant init` first if this is a new checkout without `.env`.
+Cloud setup saves credentials in a private, Git-ignored file with mode `0600`.
+Cloud responses report freshness in `/v1/status` and the
+`X-Recipe-Assistant-Stale` header. Read the deployment guide before enabling
+automatic shopping-list changes against a stale cache.
+
+To test fresh cloud authentication from an interactive terminal:
+
+```sh
+uv run python -m recipe_assistant.cloud_probe --login
+```
+
+It prompts privately for your Recipe Keeper account email/password, reports
+expiration metadata, and tests download-only sync. Credentials are not saved.
+See the investigation document for details and limitations.
+
+## Local database quick start
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
 
@@ -63,6 +100,12 @@ The bridge can read the live database directly, including WAL transactions.
 | `/v1/meal-plan?start=YYYY-MM-DD&end=YYYY-MM-DD` | Meals with recipe match status and full matched recipes |
 | `/v1/shopping-preview?start=YYYY-MM-DD&end=YYYY-MM-DD` | Ingredient lines with provenance, stable keys, and review issues |
 
+Shopping previews also support pantry defaults and explicit ingredient choices.
+Use `selected_items` for the intended shopping subset, and POST `selected_keys`
+to `/v1/shopping-preview` to change those choices. See
+[ingredient selection](docs/shopping-selection.md). Pantry staples stay visible
+but unchecked by default; recipes themselves are unchanged.
+
 Date ranges include both endpoints and are limited to 366 calendar days.
 Dates are the planner's local calendar dates; they are not shifted into UTC.
 Search matches every whitespace-separated word, case-insensitively, anywhere
@@ -83,7 +126,8 @@ recipe from duplicate candidates. A renamed recipe can leave a meal unmatched.
 
 The shopping preview is a starting point for a consumer, not a shopping-list
 writer. It returns raw nonempty ingredient lines, one entry per meal and line,
-without combining quantities or removing pantry staples. Recognizable section
+without combining quantities. Pantry rules mark staples unselected in the API's
+preview while retaining them in `items`. Recognizable section
 headings, linked recipes, empty ingredient lists, unresolved titles, and serving
 scales other than numeric `1` generate issues and exclude that meal's lines.
 Missing or unrecognized scales also require review. Other free-form ingredient
@@ -105,10 +149,15 @@ does not claim end-to-end exactly-once shopping-list updates.
 See [MacBook deployment](docs/deployment.md) and
 [Home Assistant connection plan](docs/home-assistant.md).
 
-The MacBook must be awake and reachable. Recipe Keeper must sync changes from
+Cloud mode instead follows [cloud deployment](docs/cloud-deployment.md) and
+supports the included user systemd unit on Linux.
+
+For database mode, the MacBook must be awake and reachable. Recipe Keeper must sync changes from
 your other devices before they appear here. The bridge reads on each request,
 so no restart is needed after local data changes. Database modification time
-does **not** prove cloud sync is current; `cloud_sync_verified` stays false.
+does **not** prove cloud sync is current; `cloud_sync_verified` stays false in
+database mode. Cloud mode reports its last successful sync explicitly and does
+not require the MacBook to be available.
 
 ## Development
 

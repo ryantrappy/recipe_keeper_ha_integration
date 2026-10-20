@@ -1,0 +1,14 @@
+[Unit]
+Description=Recipe Assistant cloud API
+
+[Service]
+Type=simple
+WorkingDirectory=%h/recipe_assistant_api
+ExecStart=%h/recipe_assistant_api/.venv/bin/python -m recipe_assistant serve --backend cloud --env-file %h/recipe_assistant_api/.env
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=10
+UMask=0077
+
+[Install]
+WantedBy=default.target

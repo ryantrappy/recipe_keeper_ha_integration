@@ -1,8 +1,10 @@
 """Authenticated HTTP interface to the local database."""
 
+import asyncio
 import logging
 import secrets
 import sqlite3
+from contextlib import asynccontextmanager
 from datetime import date
 from typing import Annotated
 
@@ -10,13 +12,27 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from .cloud_backend import CacheUnavailable, CloudDatabase, SyncWorker
 from .database import Database, SchemaError
-from .models import MealPlan, Recipe, RecipePage, ShoppingPreview, Status
+from .models import (
+    MealPlan,
+    Recipe,
+    RecipePage,
+    ShoppingPreview,
+    ShoppingSelectionRequest,
+    Status,
+)
+from .shopping import SelectionChangedError, select_ingredients
 
 LOGGER = logging.getLogger(__name__)
 
 
-def create_app(database: Database, token: str) -> FastAPI:
+def create_app(
+    database: Database,
+    token: str,
+    worker: SyncWorker | None = None,
+    pantry_staples: tuple[str, ...] = (),
+) -> FastAPI:
     if len(token) < 32 or token == "replace-with-a-long-random-token":
         raise ValueError("Set RECIPE_ASSISTANT_TOKEN to at least 32 random characters")
     bearer = HTTPBearer(auto_error=False)
@@ -33,17 +49,38 @@ def create_app(database: Database, token: str) -> FastAPI:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        if worker is not None:
+            worker.start()
+        try:
+            yield
+        finally:
+            if worker is not None:
+                await asyncio.to_thread(worker.stop)
+
     app = FastAPI(
         title="Recipe Assistant API",
         version="0.1.0",
-        description="Read-only access to this Mac's synced Recipe Keeper data.",
+        description="Read-only access to local or cloud-cached Recipe Keeper data.",
         dependencies=[Depends(authenticate)],
+        lifespan=lifespan,
     )
 
     @app.middleware("http")
     async def no_cache(request: Request, call_next):
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
+        if isinstance(database, CloudDatabase):
+            try:
+                state = await asyncio.to_thread(database.status)
+                response.headers["X-Recipe-Assistant-Stale"] = str(state.stale).lower()
+                if state.last_successful_sync_at is not None:
+                    response.headers["X-Recipe-Assistant-Last-Sync"] = (
+                        state.last_successful_sync_at.isoformat()
+                    )
+            except (sqlite3.Error, OSError, SchemaError):
+                response.headers["X-Recipe-Assistant-Stale"] = "true"
         return response
 
     async def unavailable(request: Request, exc: Exception) -> JSONResponse:
@@ -52,11 +89,11 @@ def create_app(database: Database, token: str) -> FastAPI:
             status_code=503,
             content={
                 "detail": "Recipe Keeper database unavailable or unsupported; "
-                "run recipe-assistant inspect on the Mac"
+                "run recipe-assistant inspect for the configured backend"
             },
         )
 
-    for error in (sqlite3.Error, OSError, SchemaError):
+    for error in (sqlite3.Error, OSError, SchemaError, CacheUnavailable):
         app.add_exception_handler(error, unavailable)
 
     def date_range(start: date, end: date) -> tuple[date, date]:
@@ -91,6 +128,18 @@ def create_app(database: Database, token: str) -> FastAPI:
 
     @app.get("/v1/shopping-preview", response_model=ShoppingPreview)
     def shopping_preview(bounds: dates) -> ShoppingPreview:
-        return database.shopping_preview(*bounds)
+        return select_ingredients(database.shopping_preview(*bounds), pantry_staples)
+
+    @app.post("/v1/shopping-preview", response_model=ShoppingPreview)
+    def shopping_selection(selection: ShoppingSelectionRequest) -> ShoppingPreview:
+        start, end = date_range(selection.start, selection.end)
+        try:
+            return select_ingredients(
+                database.shopping_preview(start, end),
+                pantry_staples,
+                selection.selected_keys,
+            )
+        except SelectionChangedError as exc:
+            raise HTTPException(409, str(exc)) from exc
 
     return app
