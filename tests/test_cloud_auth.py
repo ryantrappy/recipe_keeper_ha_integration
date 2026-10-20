@@ -9,7 +9,7 @@ from urllib.parse import parse_qs
 
 import pytest
 
-from recipe_assistant import cloud_probe
+from recipe_assistant import cloud_probe, cloud_protocol
 from recipe_assistant.cloud_probe import Authentication, ProbeError, fresh_login
 
 EMAIL = "test@example.invalid"
@@ -27,7 +27,7 @@ TOKEN_RESPONSE = {
 def mock_login_response(monkeypatch: pytest.MonkeyPatch, raw: bytes) -> MagicMock:
     opener = MagicMock()
     opener.open.return_value.__enter__.return_value.read.return_value = raw
-    monkeypatch.setattr(cloud_probe, "build_opener", Mock(return_value=opener))
+    monkeypatch.setattr(cloud_protocol, "build_opener", Mock(return_value=opener))
     return opener
 
 

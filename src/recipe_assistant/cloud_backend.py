@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from .cloud_probe import (
+from .cloud_protocol import (
     INITIAL_CURSOR,
     SECTIONS,
     AuthenticationError,
@@ -85,17 +85,13 @@ class CloudSession(CloudProbe):
 
     def _authenticated(self, operation):
         if not self._token:
-            self._token = fresh_login(
-                self.credentials.email, self.credentials.password
-            ).token
+            self._token = self._login()
         try:
             return operation()
         except CloudHTTPError as exc:
             if exc.status_code != 401:
                 raise
-        self._token = fresh_login(
-            self.credentials.email, self.credentials.password
-        ).token
+        self._token = self._login()
         try:
             return operation()
         except CloudHTTPError as exc:
@@ -104,18 +100,27 @@ class CloudSession(CloudProbe):
                 raise AuthenticationError("Renewed session rejected") from None
             raise
 
+    def _login(self) -> str:
+        return fresh_login(self.credentials.email, self.credentials.password).token
+
     def upload(self, cursors: dict[str, str], section: str, record: dict) -> dict:
         from .cloud_edits import EditingDisabled
-        from .cloud_probe import request_body
+        from .cloud_protocol import request_body
+
+        request_started = False
 
         def send() -> dict:
+            nonlocal request_started
             if self.allow_edits is not True:
-                raise EditingDisabled("Recipe Keeper editing is disabled")
+                raise EditingDisabled(
+                    "Recipe Keeper editing is disabled", request_started=request_started
+                )
             if section not in SECTIONS:
                 raise ValueError("Unsupported entity type")
             body = request_body(cursors)
             body[section + "SyncEntityRequest"]["SyncEntities"] = [record]
             body[section + "SyncEntityRequest"]["LocalChangesIds"] = [record["Id"]]
+            request_started = True
             return self._send(body)
 
         if self.allow_edits is not True:

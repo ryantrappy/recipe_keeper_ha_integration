@@ -11,7 +11,7 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from recipe_assistant import cloud_probe
+from recipe_assistant import cloud_protocol as cloud_probe
 from recipe_assistant.api import create_app
 from recipe_assistant.cloud_backend import (
     CloudCache,
@@ -549,3 +549,84 @@ def test_http_failure_is_sanitized_and_not_replayed(editor: CloudEditor) -> None
     assert result["state"] == "uncertain"
     assert result["error"] == "upload_http_503"
     assert len(cloud.uploads) == 1
+
+
+def test_disable_after_preparation_is_terminal(
+    editor: CloudEditor, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from unittest.mock import PropertyMock, patch
+
+    operation_id = str(uuid4())
+    with patch.object(
+        CloudEditor,
+        "enabled",
+        new_callable=PropertyMock,
+        side_effect=[True, True, False],
+    ):
+        result = editor.edit(
+            "Recipe",
+            "update",
+            operation_id,
+            {"notes": "Synthetic"},
+            entity_id="r1",
+            expected_revision=editor.view("Recipe", "r1")["revision"],
+        )
+    assert result["state"] == "cancelled"
+    assert editor.worker.session.uploads == []
+    assert editor.reconcile(operation_id)["state"] == "cancelled"
+    view = editor.view("Recipe", "r1")
+    assert (
+        editor.edit(
+            "Recipe",
+            "update",
+            str(uuid4()),
+            {"notes": "New"},
+            entity_id="r1",
+            expected_revision=view["revision"],
+        )["state"]
+        == "confirmed"
+    )
+
+
+def test_disable_at_upload_gate_does_not_block_record(
+    editor: CloudEditor, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = editor._state
+
+    def state(operation_id: str, value: str, error: str | None = None) -> None:
+        original(operation_id, value, error)
+        if value == "sending":
+            editor.worker.session.allow_edits = False
+
+    monkeypatch.setattr(editor, "_state", state)
+    result = editor.edit("Recipe", "create", str(uuid4()), {"title": "Disposable"})
+    assert result["state"] == "cancelled"
+    assert editor.worker.session.uploads == []
+
+
+def test_gate_after_request_retains_verification(editor: CloudEditor) -> None:
+    editor.worker.session.upload_error = EditingDisabled(
+        "disabled after request", request_started=True
+    )
+    result = editor.edit("Recipe", "create", str(uuid4()), {"title": "Disposable"})
+    assert result["state"] == "confirmed"
+    assert len(editor.worker.session.uploads) == 1
+
+
+def test_prepared_crash_reconciles_without_upload(
+    editor: CloudEditor, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = editor._state
+
+    def crash(operation_id: str, value: str, error: str | None = None) -> None:
+        if value == "sending":
+            raise ProbeError("Synthetic stop before sending marker")
+        original(operation_id, value, error)
+
+    operation_id = str(uuid4())
+    monkeypatch.setattr(editor, "_state", crash)
+    with pytest.raises(ProbeError):
+        editor.edit("Recipe", "create", operation_id, {"title": "Disposable"})
+    assert editor.operation(operation_id)["state"] == "prepared"
+    assert editor.reconcile(operation_id)["state"] == "cancelled"
+    assert editor.worker.session.uploads == []

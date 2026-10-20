@@ -1,0 +1,324 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Recipe Keeper",
+        "description": "Sign in with your Recipe Keeper account. Sync starts read-only.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnect Recipe Keeper",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to Recipe Keeper. Try again later.",
+      "invalid_auth": "Recipe Keeper rejected these credentials."
+    },
+    "abort": {
+      "already_configured": "This account is already configured.",
+      "reauth_successful": "Account reconnected.",
+      "unique_id_mismatch": "Use the same Recipe Keeper account."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Recipe Keeper options",
+        "description": "Editing affects the cloud account. Other devices can overwrite simultaneous edits. Pantry staples stay visible but unchecked in ingredient previews.",
+        "data": {
+          "allow_edits": "Allow editing Recipe Keeper",
+          "pantry_staples": "Pantry staples (one ingredient per line)",
+          "todo_entity": "Default shopping list"
+        }
+      }
+    },
+    "error": {
+      "invalid_staples": "Use at most 500 ingredient names, each up to 100 characters."
+    }
+  },
+  "entity": {
+    "calendar": {
+      "meal_plan": {
+        "name": "Meal plan"
+      }
+    },
+    "sensor": {
+      "recipes": {
+        "name": "Recipes"
+      },
+      "meals": {
+        "name": "Meals"
+      },
+      "last_successful_sync_at": {
+        "name": "Last successful sync"
+      }
+    },
+    "binary_sensor": {
+      "cloud_data_fresh": {
+        "name": "Cloud data fresh"
+      },
+      "editing_enabled": {
+        "name": "Editing enabled"
+      }
+    }
+  },
+  "services": {
+    "get_accounts": {
+      "name": "List accounts",
+      "description": "List accounts.",
+      "fields": {}
+    },
+    "search_recipes": {
+      "name": "Search recipes",
+      "description": "Search recipes.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "query": {
+          "name": "Search words"
+        },
+        "limit": {
+          "name": "Result limit"
+        },
+        "offset": {
+          "name": "Result offset"
+        }
+      }
+    },
+    "get_recipe": {
+      "name": "Get recipe",
+      "description": "Get recipe.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "recipe_id": {
+          "name": "Recipe ID"
+        }
+      }
+    },
+    "get_meal_plan": {
+      "name": "Get meal plan",
+      "description": "Get meal plan.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "start_date": {
+          "name": "Start date"
+        },
+        "end_date": {
+          "name": "End date"
+        }
+      }
+    },
+    "preview_ingredients": {
+      "name": "Preview ingredients",
+      "description": "Preview ingredients.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "start_date": {
+          "name": "Start date"
+        },
+        "end_date": {
+          "name": "End date"
+        },
+        "selected_keys": {
+          "name": "Selected ingredient keys"
+        }
+      }
+    },
+    "import_ingredients": {
+      "name": "Add selected ingredients to a shopping list",
+      "description": "Add selected ingredients to a shopping list.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "start_date": {
+          "name": "Start date"
+        },
+        "end_date": {
+          "name": "End date"
+        },
+        "selected_keys": {
+          "name": "Selected ingredient keys"
+        },
+        "todo_entity": {
+          "name": "Shopping list"
+        },
+        "import_id": {
+          "name": "Import UUID"
+        },
+        "acknowledge_issues": {
+          "name": "Import available items after reviewing skipped meals"
+        }
+      }
+    },
+    "get_editing_view": {
+      "name": "Get current editing revision",
+      "description": "Get current editing revision.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "entity_type": {
+          "name": "Record type"
+        },
+        "entity_id": {
+          "name": "Record ID"
+        }
+      }
+    },
+    "get_edit_operation": {
+      "name": "Get edit operation",
+      "description": "Get edit operation.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID"
+        }
+      }
+    },
+    "reconcile_edit": {
+      "name": "Check an uncertain edit",
+      "description": "Check an uncertain edit.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID"
+        }
+      }
+    },
+    "create_recipe": {
+      "name": "Create recipe",
+      "description": "Create recipe.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID"
+        },
+        "changes": {
+          "name": "Fields to change"
+        }
+      }
+    },
+    "update_recipe": {
+      "name": "Update recipe",
+      "description": "Update recipe.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID"
+        },
+        "recipe_id": {
+          "name": "Recipe ID"
+        },
+        "revision": {
+          "name": "Current revision"
+        },
+        "changes": {
+          "name": "Fields to change"
+        }
+      }
+    },
+    "delete_recipe": {
+      "name": "Delete recipe",
+      "description": "Delete recipe.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID"
+        },
+        "recipe_id": {
+          "name": "Recipe ID"
+        },
+        "revision": {
+          "name": "Current revision"
+        }
+      }
+    },
+    "create_meal": {
+      "name": "Create meal",
+      "description": "Create meal.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID"
+        },
+        "changes": {
+          "name": "Fields to change"
+        }
+      }
+    },
+    "update_meal": {
+      "name": "Update meal",
+      "description": "Update meal.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID"
+        },
+        "meal_id": {
+          "name": "Meal ID"
+        },
+        "revision": {
+          "name": "Current revision"
+        },
+        "changes": {
+          "name": "Fields to change"
+        }
+      }
+    },
+    "delete_meal": {
+      "name": "Delete meal",
+      "description": "Delete meal.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID"
+        },
+        "meal_id": {
+          "name": "Meal ID"
+        },
+        "revision": {
+          "name": "Current revision"
+        }
+      }
+    },
+    "refresh": {
+      "name": "Refresh cloud data",
+      "description": "Download changes now without uploading.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        }
+      }
+    }
+  }
+}

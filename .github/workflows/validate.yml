@@ -1,0 +1,43 @@
+name: Validate
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.14'
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run python scripts/bundle_client.py --check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test frontend_tests/*.test.cjs
+      - run: uv run pytest -q
+      - run: uv venv local-data/ha-test --python 3.14
+      - run: uv pip install --python local-data/ha-test/bin/python -r requirements-ha-test.txt
+      - run: PYTHONPATH=. local-data/ha-test/bin/python -m pytest -c ha_tests/pytest.ini ha_tests --confcutdir=ha_tests -q
+      - run: uv run python scripts/build_distributions.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: recipe-keeper-distributions
+          path: dist/*
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+  hacs:
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+          comment: "false"

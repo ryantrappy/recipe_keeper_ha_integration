@@ -219,6 +219,25 @@ class Database:
                 )
         return MealPlan(start=start, end=end, items=meals)
 
+    def calendar_meals(self) -> list[dict]:
+        with self.connection() as conn:
+            rows = conn.execute(
+                "SELECT Id, MealDate, Title, MealTypeName, Notes FROM Meals "
+                "WHERE IsDeleted=0 ORDER BY MealDate, MealTime, Position, Id"
+            ).fetchall()
+        return [
+            {
+                "id": row["Id"],
+                "date": (EPOCH + timedelta(microseconds=row["MealDate"] // 10))
+                .date()
+                .isoformat(),
+                "title": row["Title"] or "",
+                "meal_type": row["MealTypeName"] or "",
+                "notes": row["Notes"] or "",
+            }
+            for row in rows
+        ]
+
     def shopping_preview(self, start: date, end: date) -> ShoppingPreview:
         items = []
         issues = []

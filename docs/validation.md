@@ -90,9 +90,8 @@ to native calendar event objects. No entity updates were uploaded to the cloud
 and no existing home configuration or shopping lists were changed.
 
 The repeatable probe is `scripts/probe_home_assistant_runtime.py`, run with the
-Core development environment's Python. It is not a custom component. HACS
-packaging, actual calendar entity installation, target stable HA compatibility,
-and live VM installation remain to be implemented and tested. The repository
+Core development environment's Python. That initial probe was not a custom
+component; see the later native integration validation below. The repository
 was observed to be private, which blocks HACS distribution under its current
 published requirements. See [the feasibility report](hacs-feasibility.md).
 
@@ -146,5 +145,65 @@ of this validation.
 The server accepts stale writes, so the client can reject a stale preflight
 revision but cannot guarantee against another device changing the record
 between refresh and upload. This limitation is documented in
-[cloud editing](cloud-editing.md). HACS packaging, HA options/actions, and VM
-installation remain separate from this API branch.
+[cloud editing](cloud-editing.md). HACS packaging and HA options/actions were
+subsequently added to this branch; production VM installation remains separate.
+
+## Native custom integration, 2026-10-20
+
+`feature/two-way-sync` now contains the installable `recipe_keeper` custom
+integration, an administrator options flow, response actions, meal calendar,
+aggregate/diagnostic entities, and a bundled recipe/shopping/editing panel.
+The target VM was inspected read-only: Core **2026.10.2**, Python 3.14.6,
+HAOS 18.3 amd64, HACS 2.0.5. No production VM installation or list changes were made.
+
+The isolated integration suite uses the actual Core 2026.10.2 package and its
+matching frontend 20260930.4, with Python 3.14.8 on this Mac. Results:
+
+| Check | Result |
+| --- | --- |
+| API/shared client regression suite | 176 passed |
+| HA integration tests through real setup/actions | 26 passed |
+| JavaScript editor regression checks | 4 passed |
+| Ruff lint/format and bundled-client provenance | Passed |
+| Local hassfest metadata validation | 1 valid integration, 0 invalid |
+| Built manual HA ZIP | 28 runtime files, no credentials/cache/test files |
+| Independent client wheel import without FastAPI installed | Passed |
+| Native aiohttp fresh download and incremental sync | 72 recipes, 55 meals, fresh cache |
+| Uploads from native validation | 0 |
+| Review subagent | Approved after iterative fixes |
+
+HA coverage includes user setup, duplicate identity, rejected credentials,
+connection failure, reauthentication, opt-in options, all six CRUD action
+adapters and their default-off gate, non-admin rejection, read actions,
+diagnostics redaction, local-day calendar boundaries, cached offline startup,
+first-sync retry/cleanup, real frontend registration/unload, and import recovery.
+All mutation tests in this new suite use synthetic records and to-do handlers.
+Earlier disposable-only cloud CRUD validation remains recorded above.
+
+The importer regression cases reproduce failures before its first disk commit,
+before an add, and after an add; lost responses/cancellation; corrupt ledger and
+shutdown rejection; and unload followed by a replacement importer. Strict private
+atomic writes propagate errors, pending markers precede additions, and terminal
+completion requires every planned key to be accounted for. Uncertain calls are
+never replayed automatically; unattempted keys remain visible.
+
+Review also found and fixed asynchronous panel account/editor races, validation
+errors leaving orphan UUIDs, stale editing controls after Configure, a browser
+collision with HTMLElement.editContext, and a policy change leaving an unsent
+prepared edit permanently held. Tests establish that a provably unsent operation
+can terminate as cancelled, while a request that may have been sent (including
+before 401 renewal) retains read-back verification. The shared source and generated
+HA bundle are checked byte-for-byte.
+
+Browser smoke tests used a synthetic meal, recipe, pantry line, and in-memory
+shopping handler. They verified recipe contents, form validation/correction,
+successful synthetic editing, and importing three checked ingredients with olive
+oil excluded. The screenshot in the installation guide shows synthetic data.
+No real recipe or meal was created, changed, or deleted during this native HACS work.
+
+The ZIP and independent wheel/source archive build locally under ignored `dist/`.
+The GitHub workflow repeats Python/HA/JS checks, hassfest, and packaging. HACS's
+remote distribution check is conditional on a public repository; it cannot verify
+private installation support because HACS does not support private repositories.
+Production installation, a public release/license decision, and testing that
+release through HACS itself remain user-controlled deployment steps.

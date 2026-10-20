@@ -1,25 +1,24 @@
 # Recipe Assistant API
 
-A Recipe Keeper API for Home Assistant or other local clients. Choose
-the Mac's local database or a persistent cloud cache that can run independently
-on trappserv.er. Both backends expose the same recipe, meal-plan, and ingredient
-preview endpoints. Cloud mode signs in automatically, polls incrementally, and
-keeps serving its last complete snapshot during outages.
-Both backends default to read-only access. Cloud mode also supports explicitly
-enabled recipe and meal editing; see [cloud editing](docs/cloud-editing.md).
+A native Home Assistant custom integration, recipe/meal-plan browser, and optional
+standalone API for Recipe Keeper. The integration runs directly inside the HA VM
+with no API container or always-on Mac. It includes selective ingredient imports
+with pantry defaults and guarded two-way recipe/meal editing, off by default.
 
-See [cloud deployment](docs/cloud-deployment.md) for the recommended cloud setup
-and [the investigation](docs/cloud-investigation.md) for protocol findings.
-The default remains local database mode; it does not need cloud credentials.
+**Start with [Home Assistant installation and usage](docs/hacs-installation.md).**
+Build `dist/recipe_keeper-0.2.0.zip` for a manual private installation. HACS requires
+a public repository; this development repository remains private.
 
-[HACS feasibility and architecture](docs/hacs-feasibility.md) confirms a future
-custom integration can connect directly from Home Assistant in the VM, using
-HA networking and storage. It does not require a separate API container. The
-current API remains useful independently; the HACS component is not built yet.
+The standalone API supports either the Mac's local database or a persistent cloud
+cache on trappserv.er. Cloud mode signs in automatically, polls incrementally, and
+keeps its last complete snapshot during outages. Both backends default read-only;
+cloud mode supports explicitly enabled editing. See [cloud deployment](docs/cloud-deployment.md),
+[cloud editing](docs/cloud-editing.md), and [protocol findings](docs/cloud-investigation.md).
 
-[Optional two-way sync](docs/two-way-sync.md) records the protocol investigation.
-The API now implements guarded editing; HACS packaging and its options UI remain
-to build. Editing stays off unless `RECIPE_ASSISTANT_ALLOW_EDITS=true` is set.
+The [architecture report](docs/hacs-feasibility.md) and
+[two-way sync investigation](docs/two-way-sync.md) retain the original research.
+The native component, HA options/actions, and review panel are now implemented on
+`feature/two-way-sync`; production VM installation is still a separate step.
 
 ## Cloud quick start
 

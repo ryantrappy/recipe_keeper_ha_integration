@@ -4,13 +4,14 @@
 inside Home Assistant in the VM. A separate API server, Docker deployment, or
 Supervisor app is not required for this architecture.** The direct cloud path
 was verified with an isolated Home Assistant development runtime on 2026-10-19.
-An installable HACS integration is the next implementation stage; this project
-does not contain a completed custom component yet.
+The custom component and sidebar panel are now implemented on `feature/two-way-sync`.
+See [installation and usage](hacs-installation.md) for current instructions.
 
 For optional editing, see [the two-way sync investigation](two-way-sync.md).
 The standalone cloud client now implements guarded recipe and meal editing;
-see [cloud editing](cloud-editing.md). HA options/actions and HACS packaging
-remain to build. The native runtime proof below still describes read-only tests.
+see [cloud editing](cloud-editing.md). HA options/actions and HACS packaging are now
+implemented, with isolated tests on target Core 2026.10.2. The earlier runtime proof
+below remains historical evidence; live VM installation has not been performed.
 
 ## Evidence from the Home Assistant runtime
 
@@ -33,10 +34,9 @@ The locally configured credentials file supplied credentials to this test only.
 The test ran against the local Core checkout, version `2026.11.0.dev0`, on
 Python 3.14.8. It created its own isolated HA object and configuration directory,
 not a connection to the running home's instance. It did not install HACS, add a
-calendar entity to the live VM, or change any existing shopping lists. Target VM
-version compatibility, full config-flow lifecycle, and HACS installation remain
-release validation steps. The minimum supported HA version is not established
-by this proof.
+calendar entity to the live VM, or change any existing shopping lists. This original proof did not establish stable-version compatibility or lifecycle
+behavior. Later component tests cover Core 2026.10.2 and configuration lifecycle;
+see [validation](validation.md). Actual VM installation remains outstanding.
 
 To reproduce with the existing HA development environment:
 
@@ -116,12 +116,12 @@ response actions alone do not create a finished recipe browser UI.
 Ingredient review must support a selected subset, with pantry staples such as
 olive oil unselected by default and per-shop overrides. The shared backend
 selection logic is implemented; see [ingredient selection](shopping-selection.md).
-The custom integration's review UI and actual shopping-list writer remain to build.
+The custom integration now includes the review panel and durable selected-item importer.
 
 The native to-do building block already provides item creation and retrieval
 for compatible list integrations. We can use it instead of building another
-list provider. Shopping-list import still needs implementation: persist imported
-line keys, handle partial success and changed meals, and retain the existing
+list provider. The implemented importer persists imported
+line keys, handles partial success and changed meals, and retains the existing
 review requirements for ambiguous recipe titles and serving scales. Read-only
 cloud sync does not imply permission or protocol support for writing to Recipe
 Keeper's own shopping lists.

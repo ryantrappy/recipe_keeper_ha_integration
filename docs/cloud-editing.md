@@ -119,6 +119,7 @@ time, without saved record contents or credentials.
 | `uncertain` (`202`) | May have committed, or verification failed; never automatically replayed |
 | `conflict` (`409`) | Remote record differs from both baseline and intended result |
 | `prepared` / `sending` (`202`) | Interrupted persisted work; inspect/reconcile it |
+| `cancelled` (`200`) | Journal proves no upload began; a new operation may be submitted after review |
 
 Reconciliation works with editing off and only downloads. It confirms matching
 results or reports conflicts. If the record still equals the baseline, an
@@ -152,3 +153,9 @@ created by that invocation. Cleanup only deletes owned records, then compares
 every pre-existing record with the backup. Files use mode `0600` in a private
 directory. If cleanup fails, retain those files and inspect the owned IDs
 before another live test.
+
+A recovered `prepared` operation is cancelled without uploading because the engine
+commits `sending` before entering the upload path. Disabling editing before a send
+also cancels the operation. If a send may have occurred (including before 401 renewal),
+it stays uncertain and requires download-only verification. The native HA integration
+uses the same engine; see [its setup guide](hacs-installation.md).

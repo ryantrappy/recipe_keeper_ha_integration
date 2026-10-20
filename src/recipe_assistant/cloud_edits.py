@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from .cloud_backend import SyncWorker
-from .cloud_probe import CloudHTTPError, ProbeError
+from .cloud_protocol import CloudHTTPError, ProbeError
 
 RECIPE_FIELDS = {
     "title": "Title",
@@ -38,6 +38,10 @@ FIELDS = {"Recipe": RECIPE_FIELDS, "Meal": MEAL_FIELDS}
 
 class EditingDisabled(Exception):
     """The account's editing policy forbids cloud writes."""
+
+    def __init__(self, message: str, *, request_started: bool = False) -> None:
+        super().__init__(message)
+        self.request_started = request_started
 
 
 class EditConflict(Exception):
@@ -288,7 +292,9 @@ class CloudEditor:
                         datetime.now(UTC).isoformat(),
                     ),
                 )
-            self._require_enabled()
+            if not self.enabled:
+                self._state(operation_id, "cancelled", "editing_disabled_before_upload")
+                return self.operation(operation_id)
             self._state(operation_id, "sending")
             try:
                 response = self.worker.session.upload(
@@ -306,6 +312,13 @@ class CloudEditor:
                     or not isinstance(acks[0].get("LastModified"), str)
                 ):
                     raise ProbeError("Upload acknowledgement incomplete")
+            except EditingDisabled as exc:
+                if not exc.request_started:
+                    self._state(
+                        operation_id, "cancelled", "editing_disabled_before_upload"
+                    )
+                    return self.operation(operation_id)
+                self._state(operation_id, "uncertain", "editing_disabled_after_request")
             except CloudHTTPError as exc:
                 self._state(operation_id, "uncertain", f"upload_http_{exc.status_code}")
             except (ProbeError, OSError, ValueError, TypeError):
@@ -325,6 +338,9 @@ class CloudEditor:
             ).fetchone()
         if row is None:
             raise EntityNotFound("Operation not found")
+        if row[7] == "prepared":
+            self._state(operation_id, "cancelled", "interrupted_before_upload")
+            return
         if row[7] not in ("prepared", "sending", "uncertain"):
             return
         self.worker.sync_locked(full=True)

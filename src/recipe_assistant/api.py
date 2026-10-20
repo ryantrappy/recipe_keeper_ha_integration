@@ -136,7 +136,7 @@ def create_app(
     def edit_result(result: dict) -> JSONResponse:
         code = (
             200
-            if result["state"] == "confirmed"
+            if result["state"] in ("confirmed", "cancelled")
             else 409
             if result["state"] == "conflict"
             else 202

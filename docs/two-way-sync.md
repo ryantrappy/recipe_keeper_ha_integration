@@ -1,10 +1,11 @@
 # Optional two-way sync
 
-Two-way recipe and meal-plan sync is implemented in the standalone cloud API,
+Two-way recipe and meal-plan sync is implemented in the native HA integration and standalone cloud API,
 with editing off by default. See [cloud editing](cloud-editing.md) for the
 setting, endpoints, recovery behavior, and limitations. Create, update, and
 delete have been verified using disposable records only. The original design
-and binary findings follow; the proposed HA options UI is not built yet.
+and binary findings follow; HA options/actions and the panel are now implemented.
+See [HA installation](hacs-installation.md).
 
 This can fit the [native Home Assistant architecture](hacs-feasibility.md) and
 run inside the HA VM. It does not introduce a requirement for a Docker/API
@@ -66,7 +67,7 @@ read-only scope, so the flag is not a separate server permission.
 
 ## Implementation requirements
 
-The standalone API implements the following requirements. HA adapters remain future work.
+The standalone API and native HA adapters implement these requirements.
 
 1. **Preserve complete source records.** The current probe discards photos and
    the cache stores only selected recipe/meal fields. It also drops per-record
@@ -153,5 +154,5 @@ testing. Keep ordinary recipes and meal entries outside the experiment.
 
 The complete-record store, guarded upload path, durable operation journal,
 independent verification, API actions, and synthetic tests are implemented.
-Disposable-record write tests passed; see the validation record. HA integration
-adapters and installation remain the next stage.
+Disposable-record write tests passed; see the validation record. Native HA adapters
+and packaging are implemented. Production VM installation remains a separate step.

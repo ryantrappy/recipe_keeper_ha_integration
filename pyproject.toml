@@ -3,7 +3,7 @@ name = "recipe-assistant-api"
 version = "0.1.0"
 description = "Recipe Keeper bridge with optional cloud editing for Home Assistant"
 requires-python = ">=3.12"
-dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "python-dotenv>=1,<2"]
+dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "python-dotenv>=1,<2", "aiohttp>=3.12,<4"]
 
 [project.scripts]
 recipe-assistant = "recipe_assistant.__main__:main"
@@ -16,7 +16,7 @@ build-backend = "hatchling.build"
 packages = ["src/recipe_assistant"]
 
 [dependency-groups]
-dev = ["httpx>=0.27,<1", "pytest>=8,<10", "ruff>=0.11,<1"]
+dev = ["httpx>=0.27,<1", "pytest>=8,<10", "ruff>=0.11,<1", "pytest-asyncio>=1,<2"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
