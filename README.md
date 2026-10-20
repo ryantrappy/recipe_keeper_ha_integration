@@ -21,10 +21,8 @@ Requires Home Assistant **2026.10.2 or newer** and HACS.
 4. Open **Recipe Keeper** in the sidebar. Under **Configure**, choose pantry staples
    and your shopping list. Cloud editing stays off until explicitly enabled.
 
-**Development status:** the native integration is currently on `feature/two-way-sync`.
-Until it is merged to the default branch or published in a release, HACS cannot
-install it from `main`. For immediate testing, build the manual ZIP from this
-branch using [the installation guide](docs/hacs-installation.md).
+The native integration is included in `main`. For manual installation or development,
+use [the installation guide](docs/hacs-installation.md).
 
 See [installation, configuration, and actions](docs/hacs-installation.md),
 [Skylight synchronization readiness](docs/skylight-sync.md), and
@@ -40,8 +38,8 @@ cloud mode supports explicitly enabled editing. See [cloud deployment](docs/clou
 
 The [architecture report](docs/hacs-feasibility.md) and
 [two-way sync investigation](docs/two-way-sync.md) retain the original research.
-The native component, HA options/actions, and review panel are now implemented on
-`feature/two-way-sync`; production VM installation is still a separate step.
+The native component, HA options/actions, and review panel are included in the
+release. Production VM installation is still a separate step.
 
 ## Cloud quick start
 
@@ -203,3 +201,7 @@ files are excluded from Git. Keep `uv.lock` in the eventual repository.
 
 See [implementation notes](docs/database-notes.md) for schema observations and
 the limits of compatibility with future Recipe Keeper versions.
+
+## License
+
+[MIT](LICENSE), copyright 2026 ryantrappy.

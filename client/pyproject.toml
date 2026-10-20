@@ -1,6 +1,8 @@
 [project]
 name = "recipe-keeper-client"
 version = "0.2.1"
+license = "MIT"
+license-files = ["LICENSE"]
 description = "Recipe Keeper cloud sync client with persistent guarded editing"
 requires-python = ">=3.12"
 dependencies = ["aiohttp>=3.12,<4", "pydantic>=2.11,<3"]

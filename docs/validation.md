@@ -237,3 +237,14 @@ independent client wheel/source distribution under ignored `dist/`.
 
 See [Skylight compatibility and remaining upstream work](skylight-sync.md) and
 [security audit results](security-audit.md). No Skylight live sync has been started.
+
+
+## Approved publication — version 0.2.1
+
+The owner approved the MIT license (copyright 2026 ryantrappy), merging the tested
+feature branch into `main`, and publishing version 0.2.1. The component ZIP and
+independent client distributions now include the license; bundle provenance also
+checks the component's copy. Installation docs now point to the released/main
+integration rather than requiring the development branch. The original branch
+history is preserved. Production VM deployment is separate from repository
+publication, and no existing recipe or meal is changed by this release process.

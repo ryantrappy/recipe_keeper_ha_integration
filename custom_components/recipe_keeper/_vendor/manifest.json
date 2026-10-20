@@ -10,5 +10,6 @@
     "models.py": "733deb5d60efb9a74c745d1ba7521032273bf318cddc2a7fce631db7d92bbead",
     "shopping.py": "66055306e62f8b018357f8309c1424f132b5b40fd1dd45bdc1098482c6591edb",
     "sync_snapshot.py": "06393b01fed0de5685e124656858f0ddc1e5557d0649064339a5b0a6e050abfc"
-  }
+  },
+  "license_sha256": "243ae4b748a61b0355e84ebf341fe3b238d1378d13cae9b73cbc1cc994c37ec5"
 }

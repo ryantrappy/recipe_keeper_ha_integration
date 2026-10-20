@@ -1,6 +1,6 @@
 # Recipe Keeper in Home Assistant
 
-This branch includes a native custom integration and sidebar panel. It runs inside
+The integration includes a native custom component and sidebar panel. It runs inside
 your Home Assistant VM, logs in directly to Recipe Keeper, and polls every five
 minutes. Your Mac and the standalone API on trappserv.er do not need to be running.
 It uses the same persistent sync/edit engine as the API, with Home Assistant's
@@ -14,8 +14,9 @@ version; it has not yet been installed in your production VM.
 ## HACS installation
 
 The repository is public. Use the [HACS button and steps in the README](../README.md#installation-hacs).
-The native integration currently lives on `feature/two-way-sync`; until that code
-is merged to the default branch or published in a release, use the manual ZIP below.
+The native integration is available on `main`. HACS installs the component directly
+from the repository/release; a separate API container is not needed. The ZIP below
+is an alternative for manual installation.
 
 ## Manual development installation
 
@@ -50,11 +51,10 @@ one domain under `custom_components`, all runtime code inside that folder,
 HA metadata, runs regression tests, and builds installation artifacts. Its HACS
 distribution validation job runs when the repository is public.
 
-The repository is now public. The owner still needs to publish the reviewed native
-integration through the default branch or a release before the HACS install button
-can install it. No default-branch merge or release has been performed by this work.
-Default-store inclusion is a separate submission; a custom repository does not
-require it. Any public release should also state your chosen software license.
+The repository is public and the native integration is available through `main`
+and versioned GitHub releases. The project is [MIT-licensed](../LICENSE); its license
+is included in the component and Python client distributions. Default-store
+inclusion is a separate submission; a custom repository does not require it.
 
 ## Configure
 

@@ -21,6 +21,14 @@ DESTINATION = ROOT / "custom_components/recipe_keeper/_vendor/recipe_keeper_clie
 
 
 def bundle(check: bool = False) -> None:
+    license_data = (ROOT / "LICENSE").read_bytes()
+    license_target = DESTINATION.parent.parent / "LICENSE"
+    if check:
+        if not license_target.exists() or license_target.read_bytes() != license_data:
+            raise SystemExit("Bundled license differs; run scripts/bundle_client.py")
+    else:
+        license_target.parent.mkdir(parents=True, exist_ok=True)
+        license_target.write_bytes(license_data)
     hashes = {}
     for name in MODULES:
         source = (ROOT / "src/recipe_assistant" / name).read_bytes()
@@ -35,7 +43,15 @@ def bundle(check: bool = False) -> None:
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(source)
     manifest = (
-        json.dumps({"version": "0.2.1", "sha256": hashes}, indent=2) + "\n"
+        json.dumps(
+            {
+                "version": "0.2.1",
+                "sha256": hashes,
+                "license_sha256": hashlib.sha256(license_data).hexdigest(),
+            },
+            indent=2,
+        )
+        + "\n"
     ).encode()
     target = DESTINATION.parent / "manifest.json"
     if check:

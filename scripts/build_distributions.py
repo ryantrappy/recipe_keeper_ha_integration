@@ -22,12 +22,16 @@ def build() -> None:
             if (
                 source.is_file()
                 and "__pycache__" not in source.parts
-                and source.suffix in {".py", ".json", ".yaml", ".js", ".png"}
+                and (
+                    source.name == "LICENSE"
+                    or source.suffix in {".py", ".json", ".yaml", ".js", ".png"}
+                )
             ):
                 output.write(source, source.relative_to(ROOT))
     with tempfile.TemporaryDirectory(prefix="recipe-keeper-client-") as temp:
         project = Path(temp)
         shutil.copyfile(ROOT / "client/pyproject.toml", project / "pyproject.toml")
+        shutil.copyfile(ROOT / "LICENSE", project / "LICENSE")
         package = project / "src/recipe_keeper_client"
         package.mkdir(parents=True)
         for name in MODULES:
