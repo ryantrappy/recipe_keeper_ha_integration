@@ -12,7 +12,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import service
 from pydantic import ValidationError
 
-from ._vendor.recipe_keeper_client.cloud_backend import SyncBusy
+from ._vendor.recipe_keeper_client.cloud_backend import CacheUnavailable, SyncBusy
 from ._vendor.recipe_keeper_client.cloud_edits import (
     EditConflict,
     EditingDisabled,
@@ -38,6 +38,7 @@ SERVICE_NAMES = (
     "search_recipes",
     "get_recipe",
     "get_meal_plan",
+    "get_sync_snapshot",
     "preview_ingredients",
     "import_ingredients",
     "get_editing_view",
@@ -93,6 +94,9 @@ async def handle(hass, action: str, call) -> dict:
             result = {"recipe": recipe}
         elif action == "get_meal_plan":
             result = await client.meals(*date_range(data))
+        elif action == "get_sync_snapshot":
+            result = await client.sync_snapshot()
+            return {**result, "stale": result["stale"] or not coordinator.is_fresh}
         elif action == "preview_ingredients":
             result = await client.preview(
                 *date_range(data),
@@ -171,7 +175,7 @@ async def handle(hass, action: str, call) -> dict:
         ValueError,
     ) as exc:
         raise ServiceValidationError(str(exc)) from None
-    except (ProbeError, OSError, sqlite3.Error):
+    except (CacheUnavailable, ProbeError, OSError, sqlite3.Error):
         raise HomeAssistantError(
             "Cloud or cache unavailable; inspect the operation before retrying"
         ) from None
@@ -201,6 +205,7 @@ def async_setup_services(hass) -> None:
         },
         "get_recipe": {**ENTRY, vol.Required("recipe_id"): str},
         "get_meal_plan": {**ENTRY, **RANGE},
+        "get_sync_snapshot": ENTRY,
         "preview_ingredients": {
             **ENTRY,
             **RANGE,

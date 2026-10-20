@@ -15,6 +15,7 @@ MODULES = (
     "database.py",
     "models.py",
     "shopping.py",
+    "sync_snapshot.py",
 )
 DESTINATION = ROOT / "custom_components/recipe_keeper/_vendor/recipe_keeper_client"
 
@@ -34,7 +35,7 @@ def bundle(check: bool = False) -> None:
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(source)
     manifest = (
-        json.dumps({"version": "0.2.0", "sha256": hashes}, indent=2) + "\n"
+        json.dumps({"version": "0.2.1", "sha256": hashes}, indent=2) + "\n"
     ).encode()
     target = DESTINATION.parent / "manifest.json"
     if check:

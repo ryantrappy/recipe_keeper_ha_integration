@@ -1,12 +1,14 @@
 """Public actions, edit gates, input contracts, and content-free diagnostics."""
 
 import json
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.update_coordinator import UpdateFailed
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.recipe_keeper.diagnostics import (
@@ -196,4 +198,40 @@ async def test_non_admin_cannot_import_or_edit(
             return_response=True,
             context=Context(user_id=hass_read_only_user.id),
         )
+    client.edit.assert_not_awaited()
+
+
+async def test_sync_snapshot_preserves_own_freshness_metadata(
+    hass: HomeAssistant, entry: MockConfigEntry, client: AsyncMock
+) -> None:
+    client.sync_snapshot.return_value = {
+        "schema_version": 1,
+        "scope": "all_cached_recipes_and_meals",
+        "complete": True,
+        "stale": False,
+        "snapshot_id": "snapshot",
+        "account_id": "opaque-account",
+        "recipes": [],
+        "meals": [],
+        "deleted_recipes": [],
+        "deleted_meals": [{"id": "removed-outside-window"}],
+        "unresolved_operations": [],
+        "last_successful_sync_at": "2026-10-20T12:00:01+00:00",
+    }
+    client.sync.return_value["last_successful_sync_at"] = datetime.now(UTC).isoformat()
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    response = await action(
+        hass, "get_sync_snapshot", {"config_entry_id": entry.entry_id}
+    )
+    assert response["complete"] is True
+    assert response["deleted_meals"][0]["id"] == "removed-outside-window"
+    assert response["last_successful_sync_at"] == "2026-10-20T12:00:01+00:00"
+    assert response["stale"] is False
+    entry.runtime_data.async_set_update_error(UpdateFailed("synthetic offline"))
+    degraded = await action(
+        hass, "get_sync_snapshot", {"config_entry_id": entry.entry_id}
+    )
+    assert degraded["stale"] is True
+    assert degraded["complete"] is True
+    assert client.sync_snapshot.await_count == 2
     client.edit.assert_not_awaited()

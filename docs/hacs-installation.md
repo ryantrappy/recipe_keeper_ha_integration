@@ -11,20 +11,23 @@ The minimum/tested Home Assistant version is **2026.10.2**, matching your VM's C
 version. The integration has been tested in an isolated runtime of that exact
 version; it has not yet been installed in your production VM.
 
-## Install this private development branch
+## HACS installation
 
-The repository is private. [HACS does not support private repositories](https://www.hacs.xyz/docs/faq/private_repositories/).
-Use the manual custom-component installation while developing:
+The repository is public. Use the [HACS button and steps in the README](../README.md#installation-hacs).
+The native integration currently lives on `feature/two-way-sync`; until that code
+is merged to the default branch or published in a release, use the manual ZIP below.
+
+## Manual development installation
 
 1. Create a Home Assistant backup. If upgrading this integration, include its
    private `.storage/recipe_keeper*` files and integration configuration in that backup.
 2. Build the ZIP on your Mac:
    ```sh
-   cd /Users/ryantrapp/Code/recipe_assistant_api
+   cd /path/to/recipe_keeper_ha_integration
    uv sync --locked
    uv run python scripts/build_distributions.py
    ```
-3. Copy `dist/recipe_keeper-0.2.0.zip` to the VM using your existing file access.
+3. Copy `dist/recipe_keeper-0.2.1.zip` to the VM using your existing file access.
    Extract it **inside `/config`**. It must produce
    `/config/custom_components/recipe_keeper/manifest.json`, not another nested
    `custom_components` directory. Copying the source's entire
@@ -39,7 +42,7 @@ translations, panel JavaScript, and original book icon. It contains no account
 credentials, database, recipe backup, API server, or tests. Home Assistant resolves
 the declared pydantic dependency using its existing compatible installation.
 
-## HACS distribution later
+## HACS distribution
 
 The component follows the [HACS integration layout](https://www.hacs.xyz/docs/publish/integration/):
 one domain under `custom_components`, all runtime code inside that folder,
@@ -47,11 +50,9 @@ one domain under `custom_components`, all runtime code inside that folder,
 HA metadata, runs regression tests, and builds installation artifacts. Its HACS
 distribution validation job runs when the repository is public.
 
-After you choose to make the repository public and publish the reviewed branch
-through a release/default branch, add its GitHub URL to **HACS → Custom repositories**
-with type **Integration**, download Recipe Keeper, and restart HA. Publishing a
-release is optional for HACS, but avoids making a development branch the default
-installation. No public visibility change or release has been performed here.
+The repository is now public. The owner still needs to publish the reviewed native
+integration through the default branch or a release before the HACS install button
+can install it. No default-branch merge or release has been performed by this work.
 Default-store inclusion is a separate submission; a custom repository does not
 require it. Any public release should also state your chosen software license.
 
@@ -147,6 +148,7 @@ include both ends, limited to 366 days.
 | Action | Inputs in addition to account | Result |
 | --- | --- | --- |
 | `refresh` | None | Counts, freshness |
+| `get_sync_snapshot` | None | All cached records, exact revisions, tombstones, unresolved operations; see [Skylight preparation](skylight-sync.md) |
 | `search_recipes` | Optional `query`, `limit` (1–100), `offset` | Paginated recipe summaries |
 | `get_recipe` | `recipe_id` | Full recipe text |
 | `get_meal_plan` | `start_date`, `end_date` | Meals and recipe matches |

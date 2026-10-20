@@ -5,9 +5,32 @@ standalone API for Recipe Keeper. The integration runs directly inside the HA VM
 with no API container or always-on Mac. It includes selective ingredient imports
 with pantry defaults and guarded two-way recipe/meal editing, off by default.
 
-**Start with [Home Assistant installation and usage](docs/hacs-installation.md).**
-Build `dist/recipe_keeper-0.2.0.zip` for a manual private installation. HACS requires
-a public repository; this development repository remains private.
+## Installation (HACS)
+
+Requires Home Assistant **2026.10.2 or newer** and HACS.
+
+[![Open repository in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ryantrappy&repository=recipe_keeper_ha_integration&category=integration)
+
+1. Click **Open repository in HACS** above, or open **HACS → three-dot menu →
+   Custom repositories** and add `https://github.com/ryantrappy/recipe_keeper_ha_integration`
+   with category **Integration**.
+2. Find **Recipe Keeper**, download the published integration version, and restart
+   Home Assistant.
+3. Go to **Settings → Devices & services → Add integration → Recipe Keeper** and
+   sign in to your Recipe Keeper account.
+4. Open **Recipe Keeper** in the sidebar. Under **Configure**, choose pantry staples
+   and your shopping list. Cloud editing stays off until explicitly enabled.
+
+**Development status:** the native integration is currently on `feature/two-way-sync`.
+Until it is merged to the default branch or published in a release, HACS cannot
+install it from `main`. For immediate testing, build the manual ZIP from this
+branch using [the installation guide](docs/hacs-installation.md).
+
+See [installation, configuration, and actions](docs/hacs-installation.md),
+[Skylight synchronization readiness](docs/skylight-sync.md), and
+[security and private-data handling](SECURITY.md).
+
+## Standalone API
 
 The standalone API supports either the Mac's local database or a persistent cloud
 cache on trappserv.er. Cloud mode signs in automatically, polls incrementally, and
@@ -23,7 +46,7 @@ The native component, HA options/actions, and review panel are now implemented o
 ## Cloud quick start
 
 ```sh
-cd /Users/ryantrapp/Code/recipe_assistant_api
+cd /path/to/recipe_keeper_ha_integration
 uv sync --locked
 uv run recipe-assistant configure-cloud
 uv run recipe-assistant sync --backend cloud
@@ -51,7 +74,7 @@ See the investigation document for details and limitations.
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
 
 ```sh
-cd /Users/ryantrapp/Code/recipe_assistant_api
+cd /path/to/recipe_keeper_ha_integration
 uv sync --locked
 uv run recipe-assistant init
 uv run recipe-assistant inspect
@@ -103,6 +126,7 @@ The bridge can read the live database directly, including WAL transactions.
 | `/v1/recipes?q=lemon&limit=25&offset=0` | Search titles and ingredients; paged summaries |
 | `/v1/recipes/{id}` | Ingredients, directions, serving text, notes, source, categories, linked recipe IDs |
 | `/v1/meal-plan?start=YYYY-MM-DD&end=YYYY-MM-DD` | Meals with recipe match status and full matched recipes |
+| `/v1/sync-snapshot` | Complete cloud cache with stable IDs, exact revisions, tombstones, and unresolved edits for external synchronization |
 | `/v1/shopping-preview?start=YYYY-MM-DD&end=YYYY-MM-DD` | Ingredient lines with provenance, stable keys, and review issues |
 
 Shopping previews also support pantry defaults and explicit ingredient choices.

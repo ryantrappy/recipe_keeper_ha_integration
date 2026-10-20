@@ -28,6 +28,7 @@ from .cloud_protocol import (
     parse_authentication,
 )
 from .shopping import select_ingredients
+from .sync_snapshot import read_sync_snapshot
 
 
 class AiohttpTransport(CloudSession):
@@ -244,6 +245,13 @@ class AsyncRecipeClient:
     async def meals(self, start, end) -> dict:
         return await self._run(
             lambda: self.database.meal_plan(start, end).model_dump(mode="json")
+        )
+
+    async def sync_snapshot(self) -> dict:
+        return await self._run(
+            lambda: read_sync_snapshot(self.database, self.editor.enabled).model_dump(
+                mode="json"
+            )
         )
 
     async def preview(self, start, end, staples=(), selected_keys=None) -> dict:

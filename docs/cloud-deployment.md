@@ -11,7 +11,7 @@ recipe/meal updates, and serves the existing API from its own persistent cache.
 ## Configure on this Mac
 
 ```sh
-cd /Users/ryantrapp/Code/recipe_assistant_api
+cd /path/to/recipe_keeper_ha_integration
 uv sync --locked
 uv run recipe-assistant configure-cloud
 uv run recipe-assistant sync --backend cloud

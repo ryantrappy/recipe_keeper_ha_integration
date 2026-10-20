@@ -41,8 +41,8 @@ see [validation](validation.md). Actual VM installation remains outstanding.
 To reproduce with the existing HA development environment:
 
 ```sh
-cd /Users/ryantrapp/Code/recipe_assistant_api
-/Users/ryantrapp/Code/core/.venv/bin/python3 scripts/probe_home_assistant_runtime.py
+cd /path/to/recipe_keeper_ha_integration
+/path/to/home-assistant-core/.venv/bin/python3 scripts/probe_home_assistant_runtime.py
 ```
 
 The test cache is private and Git-ignored under
@@ -189,7 +189,8 @@ custom_components/
 ```
 
 Read-only GitHub inspection found the existing repository
-`ryantrappy/recipe_keeper_ha_integration` is **private**, with no description or
+At the original investigation,
+`ryantrappy/recipe_keeper_ha_integration` was **private**, with no description or
 topics. HACS's current general requirements specify public GitHub repositories
 and repository metadata. Visibility and metadata must be addressed before HACS
 distribution; no repository visibility was changed by this investigation.
@@ -213,3 +214,6 @@ The API bridge can remain available for other clients or as an optional future
 transport. A separate Docker/API deployment adds another running service and
 network credential to maintain; it is a fallback architecture, not a technical
 requirement for the native cloud integration.
+
+Update, 2026-10-20: the owner made the repository public. See the current
+[installation guide](hacs-installation.md) and [README HACS section](../README.md#installation-hacs).

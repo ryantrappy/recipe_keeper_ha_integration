@@ -27,7 +27,7 @@ async def async_setup_panel(hass) -> None:
             webcomponent_name="recipe-keeper-panel",
             sidebar_title="Recipe Keeper",
             sidebar_icon="mdi:book-open-page-variant",
-            module_url="/recipe_keeper_static/recipe-keeper-panel.js?v=0.2.0",
+            module_url="/recipe_keeper_static/recipe-keeper-panel.js?v=0.2.1",
             embed_iframe=False,
         )
         hass.data["recipe_keeper_panel_registered"] = True

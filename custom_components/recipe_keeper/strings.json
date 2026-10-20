@@ -319,6 +319,15 @@
           "name": "Account"
         }
       }
+    },
+    "get_sync_snapshot": {
+      "name": "Get synchronization snapshot",
+      "description": "Read all cached recipes, meals, revisions, deletion records, and unresolved edits without uploading.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        }
+      }
     }
   }
 }

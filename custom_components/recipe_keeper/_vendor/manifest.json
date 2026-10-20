@@ -1,13 +1,14 @@
 {
-  "version": "0.2.0",
+  "version": "0.2.1",
   "sha256": {
     "__init__.py": "18178179447ddaf060c4c409084127ef33e567420c5e8ed4e861ec8e95edf4b2",
-    "async_client.py": "556817812af3f3c1617d117e8f2e520893fb2f2d98935940334324a9e7a65ec2",
+    "async_client.py": "bf5572a82f7fd599e7a678aae98d0eace60723219d42cb20de10988bf4fa111f",
     "cloud_protocol.py": "40f9f9ae6edb60b3c405ace7b41571969f8e2565893bbb3a0911e19542b4258c",
     "cloud_backend.py": "dfe23faf543eba8b2d942195dfe916516d56d0a1de78786a18fcc61a3d29d8f0",
     "cloud_edits.py": "ca1bf586ac5d71e6a115b82fcaa1329e355096d7e1d744de0a4f9fe5a4c47282",
     "database.py": "af39d9608f898f96c05e22c96405c25020623a5968457039266beb2a94bff4a0",
-    "models.py": "a64011452061a101c3e839531b4ca711ca08de4ca0964c47be78ae6968dc7829",
-    "shopping.py": "66055306e62f8b018357f8309c1424f132b5b40fd1dd45bdc1098482c6591edb"
+    "models.py": "733deb5d60efb9a74c745d1ba7521032273bf318cddc2a7fce631db7d92bbead",
+    "shopping.py": "66055306e62f8b018357f8309c1424f132b5b40fd1dd45bdc1098482c6591edb",
+    "sync_snapshot.py": "06393b01fed0de5685e124656858f0ddc1e5557d0649064339a5b0a6e050abfc"
   }
 }

@@ -340,3 +340,17 @@ refresh:
       selector:
         config_entry:
           integration: recipe_keeper
+
+get_sync_snapshot:
+  name: Get synchronization snapshot
+  description: >-
+    Read all cached recipes and meals with revisions, deletion records, and unresolved
+    edits. Does not refresh or upload. Check complete, stale, and unresolved_operations
+    before using this response for synchronization.
+  fields:
+    config_entry_id:
+      name: Account
+      required: true
+      selector:
+        config_entry:
+          integration: recipe_keeper

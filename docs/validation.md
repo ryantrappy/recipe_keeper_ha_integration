@@ -207,3 +207,33 @@ remote distribution check is conditional on a public repository; it cannot verif
 private installation support because HACS does not support private repositories.
 Production installation, a public release/license decision, and testing that
 release through HACS itself remain user-controlled deployment steps.
+
+
+## Sync export and public repository checks — 2026-10-20
+
+Version 0.2.1 adds the authenticated API `/v1/sync-snapshot`, native HA
+`get_sync_snapshot` response action, and async client facade. Its full-account
+scope includes active recipes/meals across all dates, exact edit revisions,
+opaque last-modified strings, cloud tombstones, source account namespace, and
+unresolved outbound operations. A content-derived snapshot ID is stable across
+unchanged polls. Export reads use one SQLite transaction and exclude photos,
+credentials, unknown fields, and private operation payloads/baselines.
+
+Validation: **188 API/client tests**, **27 HA tests**, **4 JavaScript tests**, Ruff,
+bundle provenance, and hassfest passed. Added cases cover authentication, exact
+revision compatibility, all-date and unplanned-recipe coverage, tombstones without
+dates, title ambiguity, concurrent cache updates during export, unresolved edits,
+incomplete-cache rejection, the no-network async facade, and HA freshness handling.
+A read-only export of the existing real cache returned **72 recipes, 55 meals,
+12 recipe tombstones and 7 meal tombstones**, with completeness true and stale true
+because that saved cache had not recently polled. No cloud requests or uploads
+were needed for this check. No actual recipes or meals were changed.
+
+The owner made the repository public. README now includes a HACS repository button
+and installation steps; a default-branch merge or published release is still needed
+for HACS to install the feature-branch component. Repository description/topics
+were added for HACS discovery. Current build artifacts are the manual 0.2.1 ZIP and
+independent client wheel/source distribution under ignored `dist/`.
+
+See [Skylight compatibility and remaining upstream work](skylight-sync.md) and
+[security audit results](security-audit.md). No Skylight live sync has been started.

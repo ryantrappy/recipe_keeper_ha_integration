@@ -152,7 +152,7 @@ proves access but does not establish an unattended service lifecycle.
 Run this in a local interactive Terminal, on macOS or Linux:
 
 ```sh
-cd /Users/ryantrapp/Code/recipe_assistant_api
+cd /path/to/recipe_keeper_ha_integration
 uv run python -m recipe_assistant.cloud_probe --login
 ```
 
@@ -184,7 +184,7 @@ sync afterward to verify session coexistence.
 On this Mac, with Recipe Keeper signed in and the necessary Full Disk Access:
 
 ```sh
-cd /Users/ryantrapp/Code/recipe_assistant_api
+cd /path/to/recipe_keeper_ha_integration
 uv run python -m recipe_assistant.cloud_probe --mac-session --compare-database
 ```
 

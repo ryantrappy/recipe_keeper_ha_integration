@@ -33,8 +33,10 @@ from .models import (
     ShoppingPreview,
     ShoppingSelectionRequest,
     Status,
+    SyncSnapshot,
 )
 from .shopping import SelectionChangedError, select_ingredients
+from .sync_snapshot import read_sync_snapshot
 
 LOGGER = logging.getLogger(__name__)
 
@@ -176,6 +178,12 @@ def create_app(
     @app.get("/v1/meal-plan", response_model=MealPlan)
     def meal_plan(bounds: dates) -> MealPlan:
         return database.meal_plan(*bounds)
+
+    @app.get("/v1/sync-snapshot", response_model=SyncSnapshot)
+    def sync_snapshot() -> SyncSnapshot:
+        if not isinstance(database, CloudDatabase):
+            raise HTTPException(503, "Sync snapshots require the cloud backend")
+        return read_sync_snapshot(database, editor.enabled if editor else False)
 
     @app.get("/v1/shopping-preview", response_model=ShoppingPreview)
     def shopping_preview(bounds: dates) -> ShoppingPreview:

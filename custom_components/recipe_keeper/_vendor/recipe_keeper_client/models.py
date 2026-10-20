@@ -2,6 +2,7 @@
 
 import datetime as dt
 from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
@@ -180,3 +181,50 @@ class RecipeUpdateRequest(DeleteRequest):
 
 class MealUpdateRequest(DeleteRequest):
     changes: MealChanges
+
+
+class SyncTombstone(BaseModel):
+    id: str
+    revision: str
+    last_modified: str
+
+
+class SyncRecipe(Recipe):
+    revision: str
+    last_modified: str
+    rating: int | None
+
+
+class SyncMeal(Meal):
+    revision: str
+    last_modified: str
+    meal_type_code: int | None
+    position: int | None
+    meal_time_raw: int | None
+    colour_raw: int | None
+
+
+class SyncOperation(BaseModel):
+    operation_id: str
+    entity_type: str
+    entity_id: str
+    action: str
+    state: str
+    error: str | None
+    created_at: str
+
+
+class SyncSnapshot(BaseModel):
+    schema_version: Literal[1] = 1
+    scope: Literal["all_cached_recipes_and_meals"] = "all_cached_recipes_and_meals"
+    account_id: str
+    snapshot_id: str
+    complete: Literal[True] = True
+    stale: bool
+    allow_edits: bool
+    last_successful_sync_at: datetime
+    recipes: list[SyncRecipe]
+    meals: list[SyncMeal]
+    deleted_recipes: list[SyncTombstone]
+    deleted_meals: list[SyncTombstone]
+    unresolved_operations: list[SyncOperation]
