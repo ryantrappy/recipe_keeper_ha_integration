@@ -15,6 +15,10 @@ custom integration can connect directly from Home Assistant in the VM, using
 HA networking and storage. It does not require a separate API container. The
 current API remains useful independently; the HACS component is not built yet.
 
+[Optional two-way sync](docs/two-way-sync.md) describes the app's upload path,
+the proposed `allow_edits` flag, and the validation needed before enabling
+editing. Writes are not implemented in the current service.
+
 ## Cloud quick start
 
 ```sh

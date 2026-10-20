@@ -7,6 +7,10 @@ was verified with an isolated Home Assistant development runtime on 2026-10-19.
 An installable HACS integration is the next implementation stage; this project
 does not contain a completed custom component yet.
 
+For optional editing, see [the two-way sync investigation](two-way-sync.md).
+The app contains an upload path, but our client remains read-only until write
+semantics and complete-record preservation have been validated.
+
 ## Evidence from the Home Assistant runtime
 
 `scripts/probe_home_assistant_runtime.py` used the real Home Assistant runtime
