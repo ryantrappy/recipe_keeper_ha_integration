@@ -56,7 +56,30 @@ and use encrypted transport for any remote API access. The cloud editing flag is
 client-enforced, and simultaneous changes from another device can still overwrite
 changes because the tested service has no established compare-and-swap guarantee.
 
-The baseline integration previously passed iterative independent review. This
-update was checked directly with regression tests, source review, and the scans
+The baseline integration previously passed iterative independent review. The
+0.2.1 snapshot update was checked directly with regression tests, source review, and the scans
 above; it does not claim a separate completed independent review of this increment. No actual recipes, planned meals, shopping lists, or production HA
 configuration were modified during this review.
+
+## Version 0.3.0 URL imports and automation actions
+
+The 2026-10-26 update received iterative independent review. Demonstrated URL
+normalization/site-local IPv6 bypasses and a selected-recipe reference change
+during final preflight were fixed and independently rechecked before approval.
+The public-file Gitleaks scan found no exposed secrets. Validation used synthetic
+data and network stubs, without touching actual recipes or HA shopping lists.
+
+URL import is admin-only and requires editing enabled. The fetcher canonicalizes
+URLs using aiohttp's URL parser, validates the actual DNS answers used by its
+connector, rejects private/reserved/transition IP forms and every unsafe redirect,
+and uses a separate session with no account auth, cookies or environment proxies.
+Responses, redirects, time and structured-data traversal are bounded. Compressed
+responses are rejected to avoid unbounded decompression. Page scripts and external
+JSON-LD contexts/images are never fetched or executed. See the [import contract
+and limits](mealie-actions.md#url-import-limits).
+
+New cloud writes keep the default-off edit policy, admin checks, revision checks
+and durable journal. Random choices and parsed import contents are recorded in
+the private cache before upload; the same UUID cannot silently change intent.
+Selected recipe IDs are checked against their titles after the last preflight
+refresh. The previously documented server-side concurrency limitation remains.

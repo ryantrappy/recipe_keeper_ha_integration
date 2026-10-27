@@ -134,6 +134,8 @@ Cache schema 2 retains complete records, photos, and exact timestamp strings in
 private `RawRecords`. Schema 1 migrates and requires a full refresh before
 editing; discarded fields cannot be reconstructed from its reader projection.
 `EditOperations` stores each original record and intended payload. Keep the
+cache's additive `AutomationRequests` table too: version 0.3.0 uses it to preserve
+random recipe selections and URL-import contents across retries and restarts. Keep the
 cache private and backed up. This journal is recovery evidence, not automatic
 undo or an account export. Back up live SQLite through its backup API rather
 than copying its main file without the WAL.

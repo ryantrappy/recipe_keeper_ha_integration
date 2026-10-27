@@ -1,13 +1,15 @@
 {
-  "version": "0.2.1",
+  "version": "0.3.0",
   "sha256": {
     "__init__.py": "18178179447ddaf060c4c409084127ef33e567420c5e8ed4e861ec8e95edf4b2",
-    "async_client.py": "bf5572a82f7fd599e7a678aae98d0eace60723219d42cb20de10988bf4fa111f",
+    "async_client.py": "e4626aecda4436cb6311567bf7cbffe6b20db0edf78ae523b84b11d9485c7eab",
+    "automation.py": "78d7869cf1028ca74dfb5768f2726224fe15e28790abe2bed9d0e6ff76051722",
     "cloud_protocol.py": "40f9f9ae6edb60b3c405ace7b41571969f8e2565893bbb3a0911e19542b4258c",
-    "cloud_backend.py": "dfe23faf543eba8b2d942195dfe916516d56d0a1de78786a18fcc61a3d29d8f0",
-    "cloud_edits.py": "ca1bf586ac5d71e6a115b82fcaa1329e355096d7e1d744de0a4f9fe5a4c47282",
-    "database.py": "af39d9608f898f96c05e22c96405c25020623a5968457039266beb2a94bff4a0",
-    "models.py": "733deb5d60efb9a74c745d1ba7521032273bf318cddc2a7fce631db7d92bbead",
+    "cloud_backend.py": "5d250d0c06cc98dd127ea586e9222b999e997fe2cb896ee1710570cadff5f96f",
+    "cloud_edits.py": "655dc0222238882fd74cfbb921f9a392eb2bd0ee9912a70b84e7a8da2bdc8f62",
+    "database.py": "d7128c10a544d8623d8c154cd448a23ae6182afef5d82b6d37997ddb5be440f7",
+    "models.py": "bfb099d98acfa2b7e6e579ce56e0f3cac48fd9b98a37a29750580494e876de96",
+    "recipe_import.py": "dfb1ab99aca882ad76a553dab141e8ca29d021ddea45c4a601c3041a3437c5d2",
     "shopping.py": "66055306e62f8b018357f8309c1424f132b5b40fd1dd45bdc1098482c6591edb",
     "sync_snapshot.py": "06393b01fed0de5685e124656858f0ddc1e5557d0649064339a5b0a6e050abfc"
   },

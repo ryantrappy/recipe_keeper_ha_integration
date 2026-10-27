@@ -248,3 +248,37 @@ checks the component's copy. Installation docs now point to the released/main
 integration rather than requiring the development branch. The original branch
 history is preserved. Production VM deployment is separate from repository
 publication, and no existing recipe or meal is changed by this release process.
+
+## Mealie-style actions and calendars — version 0.3.0
+
+Validated on 2026-10-26 with Python 3.14.9 and an isolated Home Assistant
+2026.10.2 runtime:
+
+| Check | Result |
+| --- | --- |
+| API/shared client tests | 236 passed |
+| Home Assistant integration tests | 54 passed |
+| Frontend regression tests | 4 passed |
+| Ruff lint and formatting | Passed |
+| Bundled client provenance | Passed |
+| Hassfest from official HA 2026.10.2 source | 1 valid integration, 0 invalid |
+| Gitleaks scan of shipping code, tests and docs | No leaks found |
+
+The new tests exercise all action schemas, admin/edit gates, caller context for
+HA shopping-list reads, revisions, per-type calendars with local date boundaries,
+durable random/import retries, final-refresh recipe-link checks, URL parsing and
+DNS/redirect/address/size boundaries. Calendar tests verify each meal appears in
+exactly one category calendar while preserving the combined calendar.
+
+Independent review identified URL normalization and deprecated site-local IPv6
+address bypasses, plus a selected-recipe title change visible during final
+preflight. These were fixed with regression tests, then independently rechecked;
+the reviewer approved the resulting implementation with no remaining actionable
+findings. Tests use synthetic recipe records and network stubs. No Recipe Keeper
+cloud writes or production HA changes were made during this update's validation.
+
+The release includes the self-contained HA ZIP and separately usable Python
+client wheel/source archive. [Action mappings, examples, and supported import
+formats](mealie-actions.md) document the differences from Mealie. Shopping lists
+use HA's existing to-do entities, as requested; Recipe Keeper cloud shopping-list
+synchronization remains outside this update.

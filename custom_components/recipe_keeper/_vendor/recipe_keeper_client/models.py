@@ -91,6 +91,7 @@ class Status(BaseModel):
     status: str = "ok"
     recipes: int
     meals: int
+    categories: int = 0
     database_modified_at: datetime
     cloud_sync_verified: bool = False
     backend: str = "database"

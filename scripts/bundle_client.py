@@ -9,11 +9,13 @@ ROOT = Path(__file__).resolve().parents[1]
 MODULES = (
     "__init__.py",
     "async_client.py",
+    "automation.py",
     "cloud_protocol.py",
     "cloud_backend.py",
     "cloud_edits.py",
     "database.py",
     "models.py",
+    "recipe_import.py",
     "shopping.py",
     "sync_snapshot.py",
 )
@@ -45,7 +47,7 @@ def bundle(check: bool = False) -> None:
     manifest = (
         json.dumps(
             {
-                "version": "0.2.1",
+                "version": "0.3.0",
                 "sha256": hashes,
                 "license_sha256": hashlib.sha256(license_data).hexdigest(),
             },

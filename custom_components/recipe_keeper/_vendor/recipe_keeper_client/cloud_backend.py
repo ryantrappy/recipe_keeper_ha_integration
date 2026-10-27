@@ -203,6 +203,11 @@ class CloudCache:
                 "Action TEXT NOT NULL, Baseline TEXT, Payload TEXT NOT NULL, "
                 "State TEXT NOT NULL, Error TEXT, CreatedAt TEXT NOT NULL)"
             )
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS AutomationRequests ("
+                "Id TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, "
+                "ResolvedEdit TEXT NOT NULL)"
+            )
             conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
 
     @contextmanager

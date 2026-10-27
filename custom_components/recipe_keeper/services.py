@@ -27,6 +27,7 @@ from ._vendor.recipe_keeper_client.models import (
     RecipeUpdateRequest,
 )
 from ._vendor.recipe_keeper_client.shopping import SelectionChangedError
+from .automation_services import ACTION_NAMES, async_setup_automation_services
 from .const import CONF_ALLOW_EDITS, CONF_PANTRY_STAPLES, CONF_TODO_ENTITY, DOMAIN
 
 ENTRY = {vol.Required("config_entry_id"): str}
@@ -50,6 +51,7 @@ SERVICE_NAMES = (
     "create_meal",
     "update_meal",
     "delete_meal",
+    *ACTION_NAMES,
 )
 
 
@@ -190,6 +192,7 @@ async def handle(hass, action: str, call) -> dict:
 def async_setup_services(hass) -> None:
     if hass.services.has_service(DOMAIN, "get_accounts"):
         return
+    async_setup_automation_services(hass)
     schemas = {
         "refresh": ENTRY,
         "get_accounts": {},

@@ -95,6 +95,11 @@ class Database:
                 ).fetchone()[0]
                 for table in ("Recipes", "Meals")
             }
+            categories = conn.execute(
+                "SELECT count(DISTINCT c.Name) FROM RecipeCategories c "
+                "JOIN Recipes r ON r.Id=c.RecipeId WHERE r.IsDeleted=0 "
+                "AND c.Name IS NOT NULL AND trim(c.Name)!=''"
+            ).fetchone()[0]
             modified = max(
                 p.stat().st_mtime
                 for p in (self.path, Path(str(self.path) + "-wal"))
@@ -103,6 +108,7 @@ class Database:
         return Status(
             recipes=counts["Recipes"],
             meals=counts["Meals"],
+            categories=categories,
             database_modified_at=datetime.fromtimestamp(modified, UTC),
         )
 

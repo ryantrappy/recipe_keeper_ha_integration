@@ -9,7 +9,9 @@ from unittest.mock import Mock
 import pytest
 
 from recipe_assistant.async_client import AiohttpTransport, AsyncRecipeClient
-from recipe_assistant.cloud_edits import EditingDisabled
+from recipe_assistant.automation import AutomationActions
+from recipe_assistant.cloud_backend import CloudDatabase
+from recipe_assistant.cloud_edits import CloudEditor, EditingDisabled
 from recipe_assistant.cloud_protocol import (
     AuthenticationError,
     CloudHTTPError,
@@ -17,6 +19,7 @@ from recipe_assistant.cloud_protocol import (
 )
 
 from .test_cloud_backend import CREDENTIALS
+from .test_cloud_edits import editor as editor
 
 
 class Response:
@@ -164,3 +167,45 @@ async def test_disable_during_401_login_keeps_sent_evidence() -> None:
     assert error.value.request_started is True
     assert session.post.call_count == 2
     transport.close()
+
+
+@pytest.mark.asyncio
+async def test_url_import_retry_never_refetches_mutable_website(
+    editor: CloudEditor, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from unittest.mock import AsyncMock
+    from uuid import uuid4
+
+    from .test_recipe_import import RECIPE, page
+
+    client = AsyncRecipeClient(Mock(), CREDENTIALS, editor.cache.path, allow_edits=True)
+    client.editor = editor
+    client.database = CloudDatabase(editor.cache, 300)
+    client.automations = AutomationActions(editor, client.database)
+    fetch = AsyncMock(return_value=(page(RECIPE), "https://example.com/recipe"))
+    monkeypatch.setattr("recipe_assistant.async_client.fetch_recipe_page", fetch)
+    operation_id = str(uuid4())
+    result = await client.import_recipe(operation_id, "https://example.com/recipe")
+    assert result["state"] == "confirmed"
+    fetch.side_effect = AssertionError("A retry must not contact the website")
+    assert (
+        await client.import_recipe(operation_id, "https://example.com/recipe") == result
+    )
+    fetch.assert_awaited_once()
+    assert len(editor.worker.session.uploads) == 1
+    await client.close()
+
+
+@pytest.mark.asyncio
+async def test_mealplan_response_contains_revision_without_raw_photos(
+    editor: CloudEditor,
+) -> None:
+    from datetime import date
+
+    client = AsyncRecipeClient(Mock(), CREDENTIALS, editor.cache.path)
+    client.editor = editor
+    client.database = CloudDatabase(editor.cache, 300)
+    result = await client.mealplans(date(2026, 10, 1), date(2026, 10, 31))
+    assert result["mealplan"][0]["revision"] == editor.view("Meal", "m1")["revision"]
+    assert "synthetic-photo" not in json.dumps(result)
+    await client.close()

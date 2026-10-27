@@ -46,6 +46,30 @@
     "calendar": {
       "meal_plan": {
         "name": "Meal plan"
+      },
+      "breakfast": {
+        "name": "Breakfast"
+      },
+      "lunch": {
+        "name": "Lunch"
+      },
+      "dinner": {
+        "name": "Dinner"
+      },
+      "side": {
+        "name": "Side"
+      },
+      "dessert": {
+        "name": "Dessert"
+      },
+      "drink": {
+        "name": "Drink"
+      },
+      "snack": {
+        "name": "Snack"
+      },
+      "other": {
+        "name": "Other meals"
       }
     },
     "sensor": {
@@ -57,6 +81,9 @@
       },
       "last_successful_sync_at": {
         "name": "Last successful sync"
+      },
+      "categories": {
+        "name": "Categories"
       }
     },
     "binary_sensor": {
@@ -326,6 +353,177 @@
       "fields": {
         "config_entry_id": {
           "name": "Account"
+        }
+      }
+    },
+    "get_recipes": {
+      "name": "Get recipes",
+      "description": "Search recipe titles and ingredients. Returns recipes.items with pagination.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "search_terms": {
+          "name": "Search words"
+        },
+        "result_limit": {
+          "name": "Result limit"
+        },
+        "offset": {
+          "name": "Result offset"
+        }
+      }
+    },
+    "get_mealplan": {
+      "name": "Get mealplan",
+      "description": "Get meals and exact revisions for an inclusive date range. Dates default to today in Home Assistant’s timezone.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "start_date": {
+          "name": "Start date"
+        },
+        "end_date": {
+          "name": "End date"
+        }
+      }
+    },
+    "get_shopping_list_items": {
+      "name": "Get shopping list items",
+      "description": "Read the selected Home Assistant to-do list. Does not read Recipe Keeper cloud shopping lists.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "todo_entity": {
+          "name": "Shopping list"
+        },
+        "status": {
+          "name": "Item statuses"
+        }
+      }
+    },
+    "import_recipe": {
+      "name": "Import recipe from URL",
+      "description": "Import a public HTTPS page with schema.org Recipe JSON-LD. Requires editing enabled. Reuse the operation UUID to check a retry without importing twice.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID (reuse when retrying)"
+        },
+        "url": {
+          "name": "Public HTTPS recipe URL"
+        },
+        "include_tags": {
+          "name": "Include website keywords as categories"
+        },
+        "recipe_index": {
+          "name": "Recipe index for pages containing multiple recipes (starts at 0)"
+        }
+      }
+    },
+    "set_mealplan": {
+      "name": "Set mealplan",
+      "description": "Create a meal for a recipe ID or a note title. Adds a record; does not replace meals already planned for that date.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID (reuse when retrying)"
+        },
+        "date": {
+          "name": "Date"
+        },
+        "entry_type": {
+          "name": "Meal type"
+        },
+        "recipe_id": {
+          "name": "Recipe ID (or supply a note title)"
+        },
+        "note_title": {
+          "name": "Meal note title (or supply a recipe ID)"
+        },
+        "note_text": {
+          "name": "Note text"
+        }
+      }
+    },
+    "set_random_mealplan": {
+      "name": "Set random mealplan",
+      "description": "Plan a randomly chosen, uniquely titled recipe. The selection is saved before upload so a retry uses the same recipe.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID (reuse when retrying)"
+        },
+        "date": {
+          "name": "Date"
+        },
+        "entry_type": {
+          "name": "Meal type"
+        },
+        "search_terms": {
+          "name": "Optional search filter"
+        },
+        "favourite_only": {
+          "name": "Choose only favourites"
+        }
+      }
+    },
+    "update_mealplan": {
+      "name": "Update mealplan",
+      "description": "Update an existing meal using its ID and revision from Get mealplan. Other fields are preserved.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID (reuse when retrying)"
+        },
+        "mealplan_id": {
+          "name": "Mealplan ID"
+        },
+        "revision": {
+          "name": "Current revision"
+        },
+        "date": {
+          "name": "Date"
+        },
+        "entry_type": {
+          "name": "Meal type"
+        },
+        "recipe_id": {
+          "name": "Recipe ID (or supply a note title)"
+        },
+        "note_title": {
+          "name": "Meal note title (or supply a recipe ID)"
+        },
+        "note_text": {
+          "name": "Note text"
+        }
+      }
+    },
+    "delete_mealplan": {
+      "name": "Delete mealplan",
+      "description": "Delete one meal using its ID and revision from Get mealplan. Requires editing enabled.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account"
+        },
+        "operation_id": {
+          "name": "Operation UUID (reuse when retrying)"
+        },
+        "mealplan_id": {
+          "name": "Mealplan ID"
+        },
+        "revision": {
+          "name": "Current revision"
         }
       }
     }

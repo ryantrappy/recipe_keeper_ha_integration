@@ -11,6 +11,7 @@ from urllib.parse import urlencode
 
 import aiohttp
 
+from .automation import AutomationActions
 from .cloud_backend import (
     CloudCache,
     CloudDatabase,
@@ -27,6 +28,7 @@ from .cloud_protocol import (
     ProbeError,
     parse_authentication,
 )
+from .recipe_import import fetch_recipe_page, parse_recipe_page, validate_url
 from .shopping import select_ingredients
 from .sync_snapshot import read_sync_snapshot
 
@@ -172,6 +174,7 @@ class AsyncRecipeClient:
         self.worker: SyncWorker | None = None
         self.database: CloudDatabase | None = None
         self.editor: CloudEditor | None = None
+        self.automations: AutomationActions | None = None
 
     async def _run(self, function: Callable, *args, **kwargs):
         await self._lock.acquire()
@@ -206,6 +209,7 @@ class AsyncRecipeClient:
             self.worker = SyncWorker(cache, self.transport, 300)
             self.database = CloudDatabase(cache, 300)
             self.editor = CloudEditor(self.worker, allow_edits=self.allow_edits)
+            self.automations = AutomationActions(self.editor, self.database)
 
         await self._run(setup)
 
@@ -247,6 +251,23 @@ class AsyncRecipeClient:
             lambda: self.database.meal_plan(start, end).model_dump(mode="json")
         )
 
+    async def mealplans(self, start, end) -> dict:
+        def read() -> dict:
+            snapshot = read_sync_snapshot(self.database, self.editor.enabled)
+            return {
+                "mealplan": [
+                    meal.model_dump(mode="json")
+                    for meal in snapshot.meals
+                    if start <= meal.date <= end
+                ],
+                "start_date": start.isoformat(),
+                "end_date": end.isoformat(),
+                "stale": snapshot.stale,
+                "last_successful_sync_at": snapshot.last_successful_sync_at.isoformat(),
+            }
+
+        return await self._run(read)
+
     async def sync_snapshot(self) -> dict:
         return await self._run(
             lambda: read_sync_snapshot(self.database, self.editor.enabled).model_dump(
@@ -286,6 +307,40 @@ class AsyncRecipeClient:
 
     async def operation(self, operation_id: str) -> dict | None:
         return await self._run(self.editor.operation, operation_id)
+
+    async def plan_meal(self, operation_id: str, intent: dict) -> dict:
+        return await self._run(self.automations.plan, operation_id, intent)
+
+    async def import_recipe(
+        self,
+        operation_id: str,
+        url: str,
+        *,
+        include_tags: bool = False,
+        recipe_index: int | None = None,
+    ) -> dict:
+        intent = {
+            "action": "import_recipe",
+            "url": validate_url(url),
+            "include_tags": include_tags,
+            "recipe_index": recipe_index,
+        }
+        previous = await self._run(self.automations.prepared, operation_id, intent)
+        if previous:
+            return await self._run(self.automations.execute, operation_id, previous)
+        html, final_url = await fetch_recipe_page(intent["url"])
+        changes = await self.executor(
+            partial(
+                parse_recipe_page,
+                html,
+                final_url,
+                include_tags=include_tags,
+                recipe_index=recipe_index,
+            )
+        )
+        return await self._run(
+            self.automations.import_recipe, operation_id, intent, changes
+        )
 
     async def reconcile(self, operation_id: str) -> dict:
         return await self._run(self.editor.reconcile, operation_id)

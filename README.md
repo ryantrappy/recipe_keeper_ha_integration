@@ -4,6 +4,8 @@ A native Home Assistant custom integration, recipe/meal-plan browser, and option
 standalone API for Recipe Keeper. The integration runs directly inside the HA VM
 with no API container or always-on Mac. It includes selective ingredient imports
 with pantry defaults and guarded two-way recipe/meal editing, off by default.
+It also provides Mealie-style automation actions, recipe imports from public URLs,
+random meal planning, and separate calendars for each meal type.
 
 ## Installation (HACS)
 
@@ -25,6 +27,7 @@ The native integration is included in `main`. For manual installation or develop
 use [the installation guide](docs/hacs-installation.md).
 
 See [installation, configuration, and actions](docs/hacs-installation.md),
+[Mealie-style actions and calendars](docs/mealie-actions.md),
 [Skylight synchronization readiness](docs/skylight-sync.md), and
 [security and private-data handling](SECURITY.md).
 

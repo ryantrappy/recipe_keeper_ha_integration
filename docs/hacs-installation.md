@@ -28,7 +28,7 @@ is an alternative for manual installation.
    uv sync --locked
    uv run python scripts/build_distributions.py
    ```
-3. Copy `dist/recipe_keeper-0.2.1.zip` to the VM using your existing file access.
+3. Copy `dist/recipe_keeper-0.3.0.zip` to the VM using your existing file access.
    Extract it **inside `/config`**. It must produce
    `/config/custom_components/recipe_keeper/manifest.json`, not another nested
    `custom_components` directory. Copying the source's entire
@@ -115,6 +115,12 @@ create/update/delete is deliberately offered through explicit Recipe Keeper acti
 not generic calendar recurrence editing. Full recipes are returned by actions and
 the panel rather than stored in entity-state attributes. Diagnostics contain counts
 and sync status, excluding credentials and recipe/meal contents.
+
+Version 0.3.0 also creates one calendar per standard meal type and an Other meals
+calendar for custom labels. The existing combined Meal plan calendar keeps its
+identity. See [Mealie-style actions and calendars](mealie-actions.md) for the new
+meal-planning, random-choice, URL-import, shopping-list-read and search actions,
+including their response fields and examples. Existing actions below remain valid.
 
 ## Optional two-way editing
 

@@ -340,12 +340,10 @@ refresh:
       selector:
         config_entry:
           integration: recipe_keeper
-
 get_sync_snapshot:
   name: Get synchronization snapshot
-  description: >-
-    Read all cached recipes and meals with revisions, deletion records, and unresolved
-    edits. Does not refresh or upload. Check complete, stale, and unresolved_operations
+  description: Read all cached recipes and meals with revisions, deletion records,
+    and unresolved edits. Does not refresh or upload. Check complete, stale, and unresolved_operations
     before using this response for synchronization.
   fields:
     config_entry_id:
@@ -354,3 +352,278 @@ get_sync_snapshot:
       selector:
         config_entry:
           integration: recipe_keeper
+get_recipes:
+  name: Get recipes
+  description: Search recipe titles and ingredients. Returns recipes.items with pagination.
+  fields:
+    config_entry_id:
+      name: Account
+      required: true
+      selector:
+        config_entry:
+          integration: recipe_keeper
+    search_terms:
+      name: Search words
+      selector:
+        text: {}
+    result_limit:
+      name: Result limit
+      selector:
+        number:
+          min: 1
+          max: 100
+          mode: box
+    offset:
+      name: Result offset
+      selector:
+        number:
+          min: 0
+          max: 1000000
+          mode: box
+get_mealplan:
+  name: Get mealplan
+  description: Get meals and exact revisions for an inclusive date range. Dates default
+    to today in Home Assistant’s timezone.
+  fields:
+    config_entry_id:
+      name: Account
+      required: true
+      selector:
+        config_entry:
+          integration: recipe_keeper
+    start_date:
+      name: Start date
+      selector:
+        date: {}
+    end_date:
+      name: End date
+      selector:
+        date: {}
+get_shopping_list_items:
+  name: Get shopping list items
+  description: Read the selected Home Assistant to-do list. Does not read Recipe Keeper
+    cloud shopping lists.
+  fields:
+    config_entry_id:
+      name: Account
+      required: true
+      selector:
+        config_entry:
+          integration: recipe_keeper
+    todo_entity:
+      name: Shopping list
+      selector:
+        entity:
+          domain: todo
+    status:
+      name: Item statuses
+      selector:
+        select:
+          options:
+          - needs_action
+          - completed
+          multiple: true
+import_recipe:
+  name: Import recipe from URL
+  description: Import a public HTTPS page with schema.org Recipe JSON-LD. Requires
+    editing enabled. Reuse the operation UUID to check a retry without importing twice.
+  fields:
+    config_entry_id:
+      name: Account
+      required: true
+      selector:
+        config_entry:
+          integration: recipe_keeper
+    operation_id:
+      name: Operation UUID (reuse when retrying)
+      selector:
+        text: {}
+      required: true
+    url:
+      name: Public HTTPS recipe URL
+      selector:
+        text: {}
+      required: true
+    include_tags:
+      name: Include website keywords as categories
+      selector:
+        boolean: {}
+    recipe_index:
+      name: Recipe index for pages containing multiple recipes (starts at 0)
+      selector:
+        number:
+          min: 0
+          max: 1000
+          mode: box
+set_mealplan:
+  name: Set mealplan
+  description: Create a meal for a recipe ID or a note title. Adds a record; does
+    not replace meals already planned for that date.
+  fields:
+    config_entry_id:
+      name: Account
+      required: true
+      selector:
+        config_entry:
+          integration: recipe_keeper
+    operation_id:
+      name: Operation UUID (reuse when retrying)
+      selector:
+        text: {}
+      required: true
+    date:
+      name: Date
+      required: true
+      selector:
+        date: {}
+    entry_type:
+      name: Meal type
+      required: true
+      selector:
+        select:
+          options:
+          - breakfast
+          - lunch
+          - dinner
+          - side
+          - dessert
+          - drink
+          - snack
+    recipe_id:
+      name: Recipe ID (or supply a note title)
+      selector:
+        text: {}
+    note_title:
+      name: Meal note title (or supply a recipe ID)
+      selector:
+        text: {}
+    note_text:
+      name: Note text
+      selector:
+        text:
+          multiline: true
+set_random_mealplan:
+  name: Set random mealplan
+  description: Plan a randomly chosen, uniquely titled recipe. The selection is saved
+    before upload so a retry uses the same recipe.
+  fields:
+    config_entry_id:
+      name: Account
+      required: true
+      selector:
+        config_entry:
+          integration: recipe_keeper
+    operation_id:
+      name: Operation UUID (reuse when retrying)
+      selector:
+        text: {}
+      required: true
+    date:
+      name: Date
+      required: true
+      selector:
+        date: {}
+    entry_type:
+      name: Meal type
+      required: true
+      selector:
+        select:
+          options:
+          - breakfast
+          - lunch
+          - dinner
+          - side
+          - dessert
+          - drink
+          - snack
+    search_terms:
+      name: Optional search filter
+      selector:
+        text: {}
+    favourite_only:
+      name: Choose only favourites
+      selector:
+        boolean: {}
+update_mealplan:
+  name: Update mealplan
+  description: Update an existing meal using its ID and revision from Get mealplan.
+    Other fields are preserved.
+  fields:
+    config_entry_id:
+      name: Account
+      required: true
+      selector:
+        config_entry:
+          integration: recipe_keeper
+    operation_id:
+      name: Operation UUID (reuse when retrying)
+      selector:
+        text: {}
+      required: true
+    mealplan_id:
+      name: Mealplan ID
+      selector:
+        text: {}
+      required: true
+    revision:
+      name: Current revision
+      selector:
+        text: {}
+      required: true
+    date:
+      name: Date
+      required: true
+      selector:
+        date: {}
+    entry_type:
+      name: Meal type
+      required: true
+      selector:
+        select:
+          options:
+          - breakfast
+          - lunch
+          - dinner
+          - side
+          - dessert
+          - drink
+          - snack
+    recipe_id:
+      name: Recipe ID (or supply a note title)
+      selector:
+        text: {}
+    note_title:
+      name: Meal note title (or supply a recipe ID)
+      selector:
+        text: {}
+    note_text:
+      name: Note text
+      selector:
+        text:
+          multiline: true
+delete_mealplan:
+  name: Delete mealplan
+  description: Delete one meal using its ID and revision from Get mealplan. Requires
+    editing enabled.
+  fields:
+    config_entry_id:
+      name: Account
+      required: true
+      selector:
+        config_entry:
+          integration: recipe_keeper
+    operation_id:
+      name: Operation UUID (reuse when retrying)
+      selector:
+        text: {}
+      required: true
+    mealplan_id:
+      name: Mealplan ID
+      selector:
+        text: {}
+      required: true
+    revision:
+      name: Current revision
+      selector:
+        text: {}
+      required: true

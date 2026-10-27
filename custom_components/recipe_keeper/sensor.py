@@ -14,7 +14,7 @@ async def async_setup_entry(hass, entry, async_add_entities) -> None:
     async_add_entities(
         [
             RecipeKeeperSensor(entry.runtime_data, key)
-            for key in ("recipes", "meals", "last_successful_sync_at")
+            for key in ("recipes", "meals", "categories", "last_successful_sync_at")
         ]
     )
 
@@ -28,9 +28,11 @@ class RecipeKeeperSensor(RecipeKeeperEntity, SensorEntity):
             self._attr_device_class = SensorDeviceClass.TIMESTAMP
             self._attr_entity_category = EntityCategory.DIAGNOSTIC
         else:
-            self._attr_icon = (
-                "mdi:book-open-page-variant" if key == "recipes" else "mdi:calendar"
-            )
+            self._attr_icon = {
+                "recipes": "mdi:book-open-page-variant",
+                "meals": "mdi:calendar",
+                "categories": "mdi:shape",
+            }[key]
 
     @property
     def native_value(self):

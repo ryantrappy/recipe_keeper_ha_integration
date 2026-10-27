@@ -3,6 +3,7 @@
 import hashlib
 import json
 import sqlite3
+from collections.abc import Callable
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -220,6 +221,7 @@ class CloudEditor:
         *,
         entity_id: str | None = None,
         expected_revision: str | None = None,
+        preflight: Callable[[], None] | None = None,
     ) -> dict:
         self._require_enabled()
         if section not in FIELDS or action not in ("create", "update", "delete"):
@@ -246,6 +248,8 @@ class CloudEditor:
                 return self._result(previous)
             self.worker.sync_locked()
             self._require_enabled()
+            if preflight is not None:
+                preflight()
             baseline = None
             if action == "create":
                 entity_id = str(uuid4())
