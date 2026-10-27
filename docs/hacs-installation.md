@@ -7,9 +7,9 @@ It uses the same persistent sync/edit engine as the API, with Home Assistant's
 shared aiohttp session. No Docker service, Mac database mount, or REST sensor setup
 is required.
 
-The minimum/tested Home Assistant version is **2026.10.2**, matching your VM's Core
-version. The integration has been tested in an isolated runtime of that exact
-version; it has not yet been installed in your production VM.
+The minimum/tested Home Assistant version is **2026.10.2**. The integration is
+tested in an isolated runtime of that exact version. Release verification does
+not deploy the integration to your Home Assistant instance.
 
 ## HACS installation
 
